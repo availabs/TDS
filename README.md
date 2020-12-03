@@ -1,1 +1,1 @@
-Template for AVAIL apps.
+TDS app for NYSDoT.
