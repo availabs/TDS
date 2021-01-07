@@ -3,10 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@availabs/avl-components": "^1.0.10",
+    "@availabs/ams": "^1.0.5",
+    "@availabs/avl-components": "^1.0.26",
     "@testing-library/jest-dom": "^5.11.4",
     "@testing-library/react": "^11.2.2",
-    "@testing-library/user-event": "^12.5.0",
+    "@testing-library/user-event": "^12.6.0",
+    "d3-format": "^2.0.0",
     "lodash.get": "^4.4.2",
     "react": "^17.0.1",
     "react-dom": "^17.0.1",
@@ -45,8 +47,8 @@
     ]
   },
   "devDependencies": {
-    "autoprefixer": "^10.0.4",
-    "postcss": "^8.1.13",
-    "tailwindcss": "^2.0.1"
+    "autoprefixer": "^10.1.0",
+    "postcss": "^8.2.1",
+    "tailwindcss": "^2.0.2"
   }
 }

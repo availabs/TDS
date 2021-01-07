@@ -1,14 +1,13 @@
 import { createStore, combineReducers, applyMiddleware } from 'redux'
 import thunk from 'redux-thunk'
 
-import { falcorCache, messages } from "@availabs/avl-components"
+import { messages } from "@availabs/avl-components"
 
-// import reducers from "components/ams/reducers"
+import { Reducers } from "@availabs/ams"
 
 const reducer = combineReducers({
-  // ...reducers,
-  messages,
-  falcorCache
+  ...Reducers,
+  messages
 });
 
 export default createStore(reducer, applyMiddleware(thunk))

@@ -5,7 +5,7 @@ const Landing = () =>
     <div className="text-2xl font-bold">Welcome</div>
     <div className="text-xl">Please add new pages!</div>
     <div className="flex items-center justify-center">
-      <img src="images/sadpanda.jpg"/>
+      <img src="images/sadpanda.jpg" alt=""/>
     </div>
   </div>
 
@@ -16,9 +16,9 @@ const config = {
   component: Landing,
   layoutSettings: {
     fixed: true,
-    headerBar: false,
+    headerBar: true,
     logo: "AVAIL",
-    navBar: false
+    navBar: 'side'
   }
 }
 
