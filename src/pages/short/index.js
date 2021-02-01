@@ -1,7 +1,7 @@
 import ShortComponent from "./components/Short"
 import shortWrapper from "./wrappers/short"
 
-const short = {
+const Overview = {
   path: "/short",
   mainNav: true,
   name: "Short Counts",
@@ -23,4 +23,7 @@ const short = {
     ]
   }
 }
-export default short;
+const routes = [
+  Overview
+];
+export default routes;

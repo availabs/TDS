@@ -23,4 +23,7 @@ const continuous = {
     ]
   }
 }
-export default continuous;
+const routes = [
+  continuous
+]
+export default routes;

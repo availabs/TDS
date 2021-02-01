@@ -1,0 +1,3 @@
+[submodule "src/avl-graph"]
+	path = src/avl-graph
+	url = https://github.com/availabs/avl-graph.git

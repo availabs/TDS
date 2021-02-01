@@ -1,6 +1,6 @@
 import React from "react"
 
-import { Table } from "@availabs/avl-components"
+import { Table, useTheme } from "@availabs/avl-components"
 
 import { format as d3format } from "d3-format"
 
@@ -36,10 +36,16 @@ const Columns = [
   }
 ]
 
-const ClassTable = ({ fClassData }) =>
-  <Table initialPageSize={ 14 }
-    columns={ Columns }
-    sortBy="functional_class" sortOrder="asc"
-    data={ fClassData }/>
+const ClassTable = ({ fClassData }) => {
+  const theme = useTheme();
+  return !fClassData.length ? null : (
+    <div className={ `${ theme.headerBg } rounded-md pb-4` }>
+      <Table initialPageSize={ 14 }
+        columns={ Columns }
+        sortBy="functional_class" sortOrder="asc"
+        data={ fClassData }/>
+    </div>
+  )
+}
 
 export default ClassTable;

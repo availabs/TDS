@@ -28,7 +28,7 @@ const TDS_THEME_BASE = {
 	placeholder: 'placeholder-gray-200',
 
 	menuIcon: 'mr-3 h-6 w-6',
-	topMenuBorder: 'border-b border-gray-200',
+	topMenuBorder: 'border-b border-blueGray-800',
 	headerShadow: '',
 
 	bg: 'bg-blueGray-700',

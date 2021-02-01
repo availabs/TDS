@@ -4,31 +4,27 @@ import get from "lodash.get"
 
 const continuousWrapper = Component =>
   ({ falcor, falcorCache, ...props }) => {
-    const [loading, setLoading] = React.useState(false);
-
     React.useEffect(() => {
-      setLoading(true);
-      falcor.get(
-        ["hds", "continuous", "stations", "length"]
-      )
-      .then(res => {
-        const length = +get(res, ["json", "hds", "continuous", "stations", "length"], 0);
-        if (length) {
-          return falcor.get(
-            ["hds", "continuous", "stations", "byIndex",
-              { from: 0, to: length - 1 },
-              ["stationId", "data_type", "muni"]
-            ]
-          )
-        }
-      }).then(() => setLoading(false));
+      falcor.get(["hds", "continuous", "stations", "length"])
+        .then(res => {
+          const length = +get(res, ["json", "hds", "continuous", "stations", "length"], 0);
+          if (length) {
+            return falcor.get(
+              ["hds", "continuous", "stations", "byIndex",
+                { from: 0, to: length - 1 },
+                ["stationId", "data_type", "muni"]
+              ]
+            )
+          }
+        });
     }, [falcor]);
 
     const stations = React.useMemo(() =>
       getStationsFromCache(falcorCache), [falcorCache]
     );
     return (
-      <Component { ...props } stations={ stations } loading={ loading }/>
+      <Component { ...props } stations={ stations }
+        loading={ !stations.length }/>
     )
   }
 

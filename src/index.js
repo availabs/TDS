@@ -41,10 +41,12 @@ addWrappers(AmsWrappers);
 
 const AuthEnabledApp = enableAuth(App, { AUTH_HOST, PROJECT_NAME, CLIENT_HOST });
 
+const falcor = falcorGraph(API_HOST);
+
 ReactDOM.render(
   <React.StrictMode>
    	<Provider store={ store }>
-  		<FalcorProvider falcor={ falcorGraph(API_HOST) }>
+  		<FalcorProvider falcor={ falcor }>
         <ThemeContext.Provider value={ TDS_Theme }>
   	    	<AuthEnabledApp />
         </ThemeContext.Provider>

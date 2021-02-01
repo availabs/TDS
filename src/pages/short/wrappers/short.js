@@ -2,16 +2,32 @@ import React from "react"
 
 import get from "lodash.get"
 
-const REGIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
-  CLASSES = [
+export const REGIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+export const CLASSES = [
     1, 2, 4, 6, 7, 8, 9,
     11, 12, 14, 16, 17, 18, 19
   ];
 
+export const YEARS = [2019, 2018, 2017, 2016];
+
+const useAsyncSafe = func => {
+  const MOUNTED = React.useRef(false);
+  React.useEffect(() => {
+    MOUNTED.current = true;
+    return () => { MOUNTED.current = false; };
+  }, []);
+  return React.useMemo(() =>
+    (...args) => { MOUNTED.current && func(...args); },
+    [func]
+  );
+}
+
 const shortWrapper = Component =>
   ({ falcor, falcorCache, ...props }) => {
-    const [loading, setLoading] = React.useState(false),
-      [region, setRegion] = React.useState(1);
+    const [region, setRegion] = React.useState(1),
+      [year, setYear] = React.useState(YEARS[0]),
+      [loading, _setLoading] = React.useState(false),
+      setLoading = useAsyncSafe(_setLoading);
 
     React.useEffect(() => {
       falcor.get(["hds", "regions", "byId", REGIONS, ["region", "name"]]);
@@ -21,30 +37,43 @@ const shortWrapper = Component =>
       if (region === null) return;
 
       setLoading(true);
+
       falcor.get([
-        "ris", "byRegion", region, "byClass", CLASSES,
+        "ris", "byRegion", region, YEARS, "byClass", CLASSES,
         ['functional_class', 'aadt', 'length', 'vmt']
-      ])
-        .then(() => falcor.get(["hds", "short", "stations", region, "length"]))
+      ]).then(() => falcor.get(["hds", "short", "stations", region, year, "length"]))
         .then(res => {
-          const length = +get(res, ["json", "hds", "short", "stations", region, "length"], 0);
+          const length = +get(res, ["json", "hds", "short", "stations", region, year, "length"], 0);
           if (length) {
             const indices = [];
             for (let i = 0; i < length; ++i) {
               indices.push(i);
             }
             return falcor.get(
-              ["hds", "short", "stations", region, "byIndex",
+              ["hds", "short", "stations", region, year, "byIndex",
                 { from: 0, to: length - 1 }, "array"
               ]
             )
           }
         }).then(() => setLoading(false));
-    }, [falcor, region]);
+    }, [falcor, region, setLoading, year]);
 
-    const stations = React.useMemo(() =>
-      getStationsFromCache(region, falcorCache), [region, falcorCache]
-    );
+    const stations = React.useMemo(() => {
+      const length = +get(falcorCache, ["hds", "short", "stations", region, year, "length"], 0);
+
+      const stations = [];
+
+      for (let i = 0; i < length; ++i) {
+        const ref = get(falcorCache, ["hds", "short", "stations", region, year, "byIndex", i, "value"]),
+          data = get(falcorCache, ref);
+        if (data) {
+          stations.push(...get(data, ["array", "value"], []));
+        }
+      }
+
+      return stations;
+    }, [region, falcorCache, year]);
+
     const [Region, regions] = React.useMemo(() =>
       REGIONS.reduce((a, c) => {
         const data = get(falcorCache, ["hds", "regions", "byId", c], null);
@@ -58,37 +87,39 @@ const shortWrapper = Component =>
       }, [{ region, name: `Region ${ region }` }, []])
     , [region, falcorCache]);
 
+    const allClassData = React.useMemo(() =>
+      YEARS.slice().reverse().map(year =>
+        CLASSES.reduce((a, c) => {
+          const data = get(falcorCache,
+                            ["ris", "byRegion", region, year, "byClass", c],
+                            {}
+                          );
+          a[c] = get(data, "vmt", 0);
+          return a;
+        }, { index: year }),
+      ),
+    [region, falcorCache])
+
     const fClassData = React.useMemo(() =>
       CLASSES.reduce((a, c) => {
-        const data = get(falcorCache, ["ris", "byRegion", region, "byClass", c]);
-        if (data) {
-          a.push(data);
+        let data = get(falcorCache, ["ris", "byRegion", region, year, "byClass", c]);
+
+        if (!data || !data.functional_class) {
+          data = { functional_class: c, aadt: 0, vmt: 0, length: 0 };
         }
+        a.push(data);
+
         return a;
-      }, [])
-    , [region, falcorCache]);
+      }, []),
+    [region, falcorCache, year]);
 
     return (
       <Component { ...props } loading={ loading } stations={ stations }
         Region={ Region } setRegion={ setRegion }
-        regions={ regions } fClassData={ fClassData }/>
+        year={ year } setYear={ setYear }
+        regions={ regions } fClassData={ fClassData }
+        allClassData={ allClassData }/>
     )
   }
 
 export default shortWrapper;
-
-const getStationsFromCache = (region, falcorCache) => {
-  const length = +get(falcorCache, ["hds", "short", "stations", region, "length"], 0);
-
-  const stations = [];
-
-  for (let i = 0; i < length; ++i) {
-    const ref = get(falcorCache, ["hds", "short", "stations", region, "byIndex", i, "value"]),
-      data = get(falcorCache, ref);
-    if (data) {
-      stations.push(...get(data, ["array", "value"], []));
-    }
-  }
-
-  return stations;
-}
