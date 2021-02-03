@@ -6,13 +6,10 @@ import CollapsibleSidebar from "../avl-components/CollapsibleSidebar"
 
 import LayerPanel from "./LayerPanel"
 
-const Sidebar = ({ layers, activeLayers,
+const Sidebar = ({ inactiveLayers, activeLayers,
                     addLayer,
                     removeLayer,
                     title = "" }) => {
-
-  const activeIds = activeLayers.map(({ layer }) => layer.id),
-    inactiveLayers = layers.filter(({ layer }) => !activeIds.includes(layer.id));
 
   return (
     <CollapsibleSidebar>
@@ -27,18 +24,17 @@ const Sidebar = ({ layers, activeLayers,
             <div className="p-1 bg-blueGray-700">
               <Select options={ inactiveLayers }
                 placeholder="Add a Layer..."
-                accessor={ ({ layer }) => layer.name }
+                accessor={ ({ name }) => name }
                 value={ null } multi={ false }
                 searchable={ false }
                 onChange={ addLayer }/>
             </div>
           </div>
         }
-        { activeLayers.map(({ layer, filters }) =>
+        { activeLayers.map(layer =>
             <LayerPanel key={ layer.id }
               removeLayer={ removeLayer }
-              layer={ layer }
-              filters={ filters }/>
+              layer={ layer }/>
           )
         }
       </div>

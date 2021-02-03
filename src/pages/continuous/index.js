@@ -1,4 +1,4 @@
-import ContinuousComponent from "./components/Continuous"
+import ContinuousComponent from "./Continuous"
 import continuousWrapper from "./wrappers/continuous"
 
 const continuous = {

@@ -37,13 +37,12 @@ const DefaultMapOptions = {
 // };
 
 let idCounter = 0;
-const getUniqueId = () => `unique-id-${ ++ idCounter }`;
+const getUniqueId = () => `unique-id-${ ++idCounter }`;
 
 const DefaultState = {
   map: null,
   activeLayers: [],
   dynamicLayers: [],
-  filters: [],
   modals: [],
   mapActions: [],
   layersLoading: {},
@@ -71,19 +70,6 @@ const Reducer = (state, action) => {
           ...state.layersLoading,
           ...activeLayers.reduce((a, c) => ({ ...a, [c]: 0 }), {})
         }
-      };
-    }
-    case "update-filter": {
-      const { layerId, filterName, value } = payload,
-        filters = state.filters.map(filter => {
-          if (filter.layerId === layerId && filter.name === filterName) {
-            return { ...filter, prevValue: filter.value, value };
-          }
-          return filter;
-        });
-      return {
-        ...state,
-        filters
       };
     }
     case "loading-start":
@@ -162,36 +148,18 @@ const AvlMap = props => {
     layerProps = EmptyObject
   } = props;
 
-  const { falcor } = useFalcor();
+  const { falcor, falcorCache } = useFalcor();
 
   const [state, dispatch] = React.useReducer(Reducer, DefaultState);
 
   const initializedLayers = React.useRef([]);
-
-  const _needsUpdate = React.useRef([]),
-
-    needsUpdate = React.useCallback(layerId => {
-      _needsUpdate.current.push(layerId);
-    }, [_needsUpdate]),
-
-    checkNeedsUpdate = React.useCallback(layerId => {
-      if (!layerId) return Boolean(_needsUpdate.length);
-
-      if (_needsUpdate.current.includes(layerId)) {
-        _needsUpdate.current = _needsUpdate.current.filter(id => id !== layerId);
-        return true;
-      };
-      return false;
-    }, [_needsUpdate]);
 
   React.useEffect(() => {
     mapboxgl.accessToken = accessToken;
   }, [accessToken]);
 
   const mapMoved = React.useMemo(() => {
-    return throttle(
-      () => dispatch({ type: "update-state", mapMoved: Date.now() })
-    , 50);
+
   }, []);
 
   React.useEffect(() => {
@@ -207,33 +175,52 @@ const AvlMap = props => {
       style
     });
 
-    map.on("move", mapMoved);
+
+    map.on("move", () => {
+      dispatch({ type: "update-state", mapMoved: Date.now() });
+    });
 
     map.on("load", () => {
       dispatch({ type: "map-loaded", map });
     });
 
-    return () => { map.remove(); };
+    return () => map.remove();
   }, [id, mapOptions, mapMoved]);
 
   const updateFilter = React.useCallback((layer, filterName, value) => {
-    needsUpdate(layer.id);
-    dispatch({
-      type: "update-filter",
-      layerId: layer.id,
-      filterName,
-      value
-    });
-  }, [needsUpdate]);
+
+    if (!get(layer, ["filters", filterName], null)) return;
+
+    dispatch({ type: "loading-start", layerId: layer.id });
+
+    const prevValue = layer.filters[filterName].value;
+
+    layer.filters = {
+      ...layer.filters,
+      [filterName]: {
+        ...layer.filters[filterName],
+        prevValue,
+        value
+      }
+    };
+
+    layer.fetchData(falcor, falcorCache)
+      .then(() => layer.render(state.map, falcorCache))
+      .then(() => {
+        dispatch({ type: "loading-stop", layerId: layer.id });
+      });
+
+  }, [state.map, falcor, falcorCache]);
 
   const updateHover = React.useMemo(() => {
-    return throttle((hoverData) => {
+    return hoverData => {
       dispatch({
         type: "update-hover",
         hoverData
       });
-    }, 50);
+    };
   }, []);
+
   const pinHoverComp = React.useCallback(hoverData => {
     dispatch({
       type: "pin-hover-comp",
@@ -261,95 +248,77 @@ const AvlMap = props => {
         initedLayers: []
       };
 
-      layers.filter(({ layerId }) => !initializedLayers.current.includes(layerId))
-        .reduce((promise, layer) => {
-
-          return promise.then(() => layer._init(state.map, falcor))
+      const layersToInit = layers
+        .filter(({ id }) => !initializedLayers.current.includes(id))
+        .map(layer => {
+          return layer._init(state.map, falcor, falcorCache)
             .then(() => {
 
-              const { filters, modals, mapActions } = layer;
+              const { modals, mapActions } = layer;
 
-              initializedLayers.current.push(layer);
-              needsUpdate(layer.id);
+              initializedLayers.current.push(layer.id);
 
-              data.filters.push(...filters.map(f =>
-                ({ ...f, layerId: layer.id, prevValue: f.value,
-                  onChange: v => updateFilter(layer, f.name, v)
-                })
-              ));
-              data.modals.push(...modals.map(m =>
-                ({ ...m, layerId: layer.id })
-              ));
-              data.mapActions.push(...mapActions.map(ma =>
-                ({ ...ma, layerId: layer.id })
-              ));
+              for (const filterName in layer.filters) {
+                layer.filters[filterName] = {
+                  ...layer.filters[filterName],
+                  layerId: layer.id,
+                  prevValue: null,
+                  onChange: v => updateFilter(layer, filterName, v)
+                }
+              }
+              data.filters.push(...Object.values(layer.filters));
 
               if (layer.setActive) {
                 data.activeLayers.push(layer.id);
-                layer._onAdd(state.map, filters, falcor, updateHover, pinHoverComp);
+                layer._onAdd(state.map, falcor, falcorCache, updateHover, pinHoverComp)
+                  .then(() => layer.fetchData(falcor, falcorCache))
+                  .then(() => layer.render(state.map, falcorCache));
               }
             })
+        });
 
-        }, Promise.resolve())
-          .then(() => {
-            dispatch({
-              type: "init-layers",
-              ...data
-            });
-          });
+        if (layersToInit.length) {
+          Promise.all(layersToInit)
+            .then(() => {
+              dispatch({
+                type: "init-layers",
+                ...data
+              });
+            })
+        };
     }
-  }, [layers, state.map, updateFilter, initializedLayers, needsUpdate, falcor, updateHover, pinHoverComp]);
+  }, [layers, state.map, updateFilter, initializedLayers, falcor, falcorCache, updateHover, pinHoverComp]);
 
-  const allLayers = React.useMemo(() => {
-    return layers.map(layer => ({
-        layer,
-        filters: state.filters
-          .filter(({ layerId }) => layerId === layer.id)
-      }));
-  }, [layers, state.filters]);
-
-  const activeLayers = React.useMemo(() => {
-    return layers.filter(({ id }) => state.activeLayers.includes(id))
-      .map(layer => ({
-        layer,
-        filters: state.filters
-          .filter(({ layerId }) => layerId === layer.id)
-      }));
-  }, [layers, state.filters, state.activeLayers]);
-
-  React.useEffect(() => {
-    activeLayers.forEach(({ layer, filters }) => {
-      if (checkNeedsUpdate(layer.id)) {
-
-        dispatch({ type: "loading-start", layerId: layer.id });
-
-        layer.fetchData(filters, falcor)
-          .then(() => layer.render(state.map, filters, falcor))
-          .then(() => {
-            dispatch({ type: "loading-stop", layerId: layer.id });
-          });
+  const [activeLayers, inactiveLayers] = React.useMemo(() => {
+    // return layers.filter(({ id }) => state.activeLayers.includes(id));
+    return layers.reduce((a, c) => {
+      if (state.activeLayers.includes(c.id)) {
+        a[0].push(c);
       }
-    });
-  }, [activeLayers, checkNeedsUpdate, state.map, falcor]);
+      else {
+        a[1].push(c);
+      }
+      return a;
+    }, [[], []]);
+  }, [layers, state.activeLayers]);
 
   React.useEffect(() => {
-    activeLayers.forEach(({ layer, filters }) => {
+    activeLayers.forEach(layer => {
       const props = get(layerProps, layer.id);
       if (props) {
-        layer.receiveProps(props, state.map, filters, falcor);
+        layer.receiveProps(props, state.map, falcor, falcorCache);
       }
     })
-  }, [activeLayers, layerProps, state.map, falcor]);
+  }, [activeLayers, layerProps, state.map, falcor, falcorCache]);
 
-  const addLayer = React.useCallback(({ layer, filters }) => {
-    layer._onAdd(state.map, filters, falcor, updateHover, pinHoverComp)
-      // .then(() => layer.fetchData(filters, falcor))
-      .then(() => layer.render(state.map, filters, falcor));
+  const addLayer = React.useCallback(layer => {
+    layer._onAdd(state.map, falcor, falcorCache, updateHover, pinHoverComp)
+      .then(() => layer.render(state.map, falcorCache));
     dispatch({
       type: "activate-layer",
       layerId: layer.id
     });
-  }, [state.map, falcor, updateHover, pinHoverComp]);
+  }, [state.map, falcor, falcorCache, updateHover, pinHoverComp]);
   const removeLayer = React.useCallback(layer => {
     layer._onRemove(state.map);
     dispatch({
@@ -359,7 +328,7 @@ const AvlMap = props => {
   }, [state.map]);
 
   const loadingLayers = React.useMemo(() => {
-    return activeLayers.filter(({ layer }) => Boolean(state.layersLoading[layer.id]));
+    return activeLayers.filter(layer => Boolean(state.layersLoading[layer.id]));
   }, [activeLayers, state.layersLoading]);
 
   const ref = React.useRef(null),
@@ -374,7 +343,7 @@ const AvlMap = props => {
       <div id={ id } className="flex-grow" ref={ ref }/>
 
       <Sidebar { ...sidebar }
-        layers={ allLayers }
+        inactiveLayers={ inactiveLayers }
         activeLayers={ activeLayers }
         addLayer={ addLayer }
         removeLayer={ removeLayer }/>
@@ -402,7 +371,7 @@ const AvlMap = props => {
         style={ { left: "300px" } }>
 
         <div className="absolute bottom-0">
-          { loadingLayers.map(({ layer }) =>
+          { loadingLayers.map(layer =>
               <LoadingLayer key={ layer.id } layer={ layer }/>
             )
           }

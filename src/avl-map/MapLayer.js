@@ -1,3 +1,5 @@
+import throttle from "lodash.throttle"
+
 import { hasValue } from "@availabs/avl-components"
 
 import DefaultHoverComp from "./components/DefaultHoverComp"
@@ -7,6 +9,8 @@ import get from "lodash.get"
 let num = -1;
 const getLayerId = () => `avl-layer-${ ++num }`;
 
+const DefaultCallback = () => null;
+
 export const getFilter = (filters, filterName) => {
   return filters.reduce((a, c) => {
     return c.name === filterName ? c : a;
@@ -15,8 +19,8 @@ export const getFilter = (filters, filterName) => {
 
 const DefaultOptions = {
   setActive: true,
-  filters: [],
-  modals: [],
+  filters: {},
+  modals: {},
   mapActions: [],
   sources: [],
   layers: []
@@ -36,10 +40,10 @@ class MapLayer {
     this.callbacks = [];
     this.hoveredFeatures = [];
   }
-  _init(map, falcor) {
-    return this.init(falcor);
+  _init(map, falcor, falcorCache) {
+    return this.init(falcor, falcorCache);
   }
-  init(falcor) {
+  init(falcor, falcorCache) {
     return Promise.resolve({
       filters: this.filters,
       modals: this.modals,
@@ -47,7 +51,7 @@ class MapLayer {
     });
   }
 
-  _onAdd(map, filters, falcor, updateHover, pinHoverComp) {
+  _onAdd(map, falcor, falcorCache, updateHover, pinHoverComp) {
     this.sources.forEach(({ id, source }) => {
       if (!map.getSource(id)) {
         map.addSource(id, source);
@@ -64,9 +68,9 @@ class MapLayer {
     if (this.onClick) {
       this.addClick(map);
     }
-    return this.onAdd(filters);
+    return this.onAdd(map, falcor, falcorCache);
   }
-  onAdd(filters) {
+  onAdd(map, falcor, falcorCache) {
     return Promise.resolve();
   }
 
@@ -87,24 +91,26 @@ class MapLayer {
   }
 
   hoverLeave(map) {
-    while(this.hoveredFeatures.length) {
+    while (this.hoveredFeatures.length) {
       map.setFeatureState(this.hoveredFeatures.pop(), { hover: false });
     }
   }
 
   addHover(map, updateHover, pinHoverComp) {
 
-    const mousemove = ({ point, features, lngLat, ...rest }) => {
-      const data = this.onHover.callback.call(this, features, lngLat),
-        HoverComp = get(this.onHover, "HoverComp", DefaultHoverComp);
+    const callback = get(this, ["onHover", "callback"], DefaultCallback).bind(this),
+      HoverComp = get(this, ["onHover", "HoverComp"], DefaultHoverComp);
+
+    const mousemove = ({ point, features, lngLat }) => {
 
       this.hoverLeave(map);
 
       features.forEach(({ id, source, sourceLayer }) => {
         map.setFeatureState({ id, source, sourceLayer }, { hover: true });
         this.hoveredFeatures.push({ id, source, sourceLayer });
-      })
+      });
 
+      const data = callback(features, lngLat);
 
       if (hasValue(data)) {
         updateHover({
@@ -140,6 +146,7 @@ class MapLayer {
     });
 
     this.onHover.layers.forEach(layer => {
+
       map.on("mousemove", layer, mousemove);
       map.on("mouseleave", layer, mouseleave);
       map.on("click", layer, click);
@@ -162,14 +169,14 @@ class MapLayer {
 
   }
 
-  fetchData(filters) {
+  fetchData() {
     return Promise.resolve();
   }
-  render(map, filters, falcor) {
+  render(map, falcorCache) {
 
   }
 
-  receiveProps(props, map, filters, falcor) {
+  receiveProps(props, map, falcor, falcorCache) {
 
   }
 }

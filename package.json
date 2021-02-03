@@ -4,7 +4,7 @@
   "private": true,
   "dependencies": {
     "@availabs/ams": "^1.0.5",
-    "@availabs/avl-components": "^1.0.29",
+    "@availabs/avl-components": "^1.0.32",
     "@testing-library/jest-dom": "^5.11.4",
     "@testing-library/react": "^11.2.2",
     "@testing-library/user-event": "^12.6.0",

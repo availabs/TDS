@@ -1,10 +1,10 @@
 import React from "react"
 
+import { format as d3format } from "d3"
+
 import { useTheme } from "@availabs/avl-components"
 
 import { BarGraph, getColorRange } from "avl-graph/src"
-
-import { format as d3format } from "d3"
 
 const colors1 = getColorRange(7, "Set3"),
   colors2 = getColorRange(7, "Set1")
@@ -43,7 +43,7 @@ const VMTBarGraph = ({ data }) => (
         label: "Years"
       } }
       axisLeft={ {
-        label: "Vehicles by Functional Class"
+        label: "VMT by Functional Class"
       } }/>
   </div>
 )

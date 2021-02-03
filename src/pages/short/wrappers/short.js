@@ -1,5 +1,7 @@
 import React from "react"
 
+import { useParams } from "react-router-dom"
+
 import get from "lodash.get"
 
 export const REGIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
@@ -10,7 +12,7 @@ export const CLASSES = [
 
 export const YEARS = [2019, 2018, 2017, 2016];
 
-const useAsyncSafe = func => {
+export const useAsyncSafe = func => {
   const MOUNTED = React.useRef(false);
   React.useEffect(() => {
     MOUNTED.current = true;
@@ -28,6 +30,13 @@ const shortWrapper = Component =>
       [year, setYear] = React.useState(YEARS[0]),
       [loading, _setLoading] = React.useState(false),
       setLoading = useAsyncSafe(_setLoading);
+
+    const params = useParams();
+
+    React.useEffect(() => {
+      const { region } = params;
+      if (region) setRegion(region);
+    }, [params]);
 
     React.useEffect(() => {
       falcor.get(["hds", "regions", "byId", REGIONS, ["region", "name"]]);
@@ -55,7 +64,8 @@ const shortWrapper = Component =>
               ]
             )
           }
-        }).then(() => setLoading(false));
+        })
+        .then(() => setLoading(false));
     }, [falcor, region, setLoading, year]);
 
     const stations = React.useMemo(() => {
@@ -116,7 +126,7 @@ const shortWrapper = Component =>
     return (
       <Component { ...props } loading={ loading } stations={ stations }
         Region={ Region } setRegion={ setRegion }
-        year={ year } setYear={ setYear }
+        year={ year } setYear={ setYear } years={ YEARS }
         regions={ regions } fClassData={ fClassData }
         allClassData={ allClassData }/>
     )

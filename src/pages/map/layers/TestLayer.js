@@ -6,8 +6,9 @@ import MapLayer, { getFilter } from "avl-map/MapLayer"
 class TestLayer1 extends MapLayer {
   name = "Counties"
 
-  filters = [
-    { name: "Counties",
+  filters = {
+    counties: {
+      name: "Counties",
       type: "select",
       domain: [],
       value: ["36001", "36093", "36083"],
@@ -16,16 +17,27 @@ class TestLayer1 extends MapLayer {
       valueAccessor: d => d.geoid,
       multi: true
     },
-    // { name: "Test 1",
+    cousubs: {
+      name: "Cousubs",
+      type: "select",
+      domain: [],
+      value: [],
+      searchable: true,
+      accessor: d => d.name,
+      valueAccessor: d => d.geoid,
+      multi: true
+    },
+    // Test{
+    //   name: "Test",
     //   type: "select",
     //   multi: false,
     //   searchable: false,
     //   options: [1, 2, 3, 4, 5],
     //   accessor: v => `Value ${ v }`
     // }
-  ]
+  }
   onHover = {
-    layers: ["counties"],
+    layers: ["counties", "cousubs"],
     callback: (features, lngLat, layer) => {
       return [
         [this.name],
@@ -55,10 +67,16 @@ class TestLayer1 extends MapLayer {
         url: "mapbox://am3081.a8ndgl5n"
       }
     },
+    { id: "cousubs",
+      source: {
+        'type': "vector",
+        'url': 'mapbox://am3081.36lr7sic'
+      },
+    }
   ]
   layers = [
     { id: "counties",
-      filter : ["in", "geoid", "none"],
+      filter: ["boolean", false],
       "source-layer": "counties",
       source: "counties",
       type: "fill",
@@ -77,30 +95,72 @@ class TestLayer1 extends MapLayer {
           20, 0.1
         ]
       }
+    },
+    { id: "cousubs",
+      filter: ["boolean", false],
+      "source-layer": "cousubs",
+      source: "cousubs",
+      type: "fill",
+      paint: {
+        "fill-color": [
+          "case",
+          ["boolean", ["feature-state", "hover"], false],
+          "#090",
+          "#009"
+        ],
+        "fill-opacity": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          5, 1.0,
+          20, 0.1
+        ]
+      }
     }
   ]
   init(falcor) {
-    return falcor.get(["geo", "36", "counties"])
+    return falcor.get(["geo", "36", ["counties", "cousubs"]])
       .then(res => {
-        const counties = get(res, ["json", "geo", "36", "counties"]);
+        const counties = get(res, ["json", "geo", "36", "counties"]),
+          cousubs = get(res, ["json", "geo", "36", "cousubs"]);
         return falcor.get(["geo", counties, "name"])
           .then(res => {
-            this.filters[0].domain = counties.map(geoid => {
+            this.filters.counties.domain = counties.map(geoid => {
               const name = get(res, ["json", "geo", geoid, "name"]);
               return { geoid, name };
             }).sort((a, b) => a.name.localeCompare(b.name));
+          })
+          .then(() => {
+            return falcor.get(["geo", cousubs, "name"])
+              .then(res => {
+                this.filters.cousubs.domain = cousubs.map(geoid => {
+                  const name = get(res, ["json", "geo", geoid, "name"]);
+                  return { geoid, name };
+                }).sort((a, b) => a.name.localeCompare(b.name));
+              })
           });
       });
   }
-  render(map, filters) {
-    const filter = getFilter(filters, "Counties"),
-      geoids = get(filter, "value", []);
+  render(map) {
+    const counties = get(this, ["filters", "counties", "value"], []);
+    if (counties.length) {
+      map.setFilter("counties", ["match", ["get", "geoid"], counties, true, false]);
+    }
+    else {
+      map.setFilter("counties", ["boolean", false]);
+    }
 
-    map.setFilter("counties", ["in", "geoid", "none", ...geoids]);
+    const cousubs = get(this, ["filters", "cousubs", "value"], []);
+    if (cousubs.length) {
+      map.setFilter("cousubs", ["match", ["get", "geoid"], cousubs, true, false]);
+    }
+    else {
+      map.setFilter("cousubs", ["boolean", false]);
+    }
   }
-  receiveProps(props) {
-    this.history = props.history;
-  }
+  // receiveProps(props) {
+  //   this.history = props.history;
+  // }
 }
 
 export const layerFactory1 = (options = {}) => new TestLayer1({

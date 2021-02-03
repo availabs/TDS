@@ -13,26 +13,28 @@ import { layerFactory1 } from "./layers/TestLayer"
 const Map = ({ mapOptions, layers, falcor, falcorCache }) => {
 
   React.useEffect(() => {
-    falcor.get(["geo", "36", "counties"])
+    falcor.get(["geo", "36", ["counties", "cousubs"]])
       .then(res => {
-        const counties = get(res, ["json", "geo", "36", "counties"]);
-        return falcor.get(["geo", counties, "name"]);
+        const counties = get(res, ["json", "geo", "36", "counties"]),
+          cousubs = get(res, ["json", "geo", "36", "cousubs"]);
+        return falcor.get(["geo", counties, "name"])
+          .then(() => falcor.get(["geo", cousubs, "name"]));
       });
   }, [falcor]);
 
   const history = useHistory();
 
-  const layerProps = React.useMemo(() => {
-    return {
-      [layers[0].id]: {
-        history
-      }
-    }
-  }, [layers, history]);
+  // const layerProps = React.useMemo(() => {
+  //   return {
+  //     [layers[0].id]: {
+  //       history
+  //     }
+  //   }
+  // }, [layers, history]);
 
   return (
     <AvlMap accessToken={ MAPBOX_TOKEN }
-      layerProps={ layerProps }
+      // layerProps={ layerProps }
       sidebar={ {
         title: "Map Test",
         layers: ["layers", "styles"]

@@ -1,5 +1,7 @@
 import React from "react"
 
+import { useHistory } from "react-router-dom"
+
 import { Table, useTheme } from "@availabs/avl-components"
 
 import { format as d3format } from "d3-format"
@@ -62,12 +64,19 @@ const ExpandRow = ({ values: [{ functional_class, road_name, length }] }) =>
   </div>
 
 const StationsTable = ({ stations }) => {
+  const history = useHistory();
+
+  const onRowClick = React.useCallback((e, row) => {
+    history.push(`short/station/${ row.values.stationId }`);
+  }, [history]);
+
   const theme = useTheme();
   return !stations.length ? null : (
     <div className={ `${ theme.headerBg } rounded-md pb-6` }>
       <Table columns={ Columns }
         initialPageSize={ 15 }
         ExpandRow={ ExpandRow }
+        onRowClick={ onRowClick }
         data={
           stations.map(s =>
             ({ ...s,

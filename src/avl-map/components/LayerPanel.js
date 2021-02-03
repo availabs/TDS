@@ -2,11 +2,15 @@ import React from "react"
 
 import { Select } from "@availabs/avl-components"
 
-const LayerPanel = ({ layer, filters, removeLayer }) => {
+const LayerPanel = ({ layer, removeLayer }) => {
   const [open, setOpen] = React.useState(true),
     toggle = React.useCallback(e => {
       setOpen(!open);
     }, [open, setOpen]);
+
+  const filters = React.useMemo(() => {
+    return generateFilters(Object.values(layer.filters));
+  }, [layer.filters]);
 
   return (
     <div className="bg-blueGray-800 p-1 mb-1 rounded">
@@ -14,7 +18,7 @@ const LayerPanel = ({ layer, filters, removeLayer }) => {
         open={ open } toggle={ toggle }
         removeLayer={ removeLayer }/>
       <div style={ { display: open ? "block" : "none" } }>
-        { generateFilters(filters) }
+        { filters }
       </div>
     </div>
   )

@@ -4,11 +4,9 @@ import { format as d3format } from "d3"
 
 import { Select } from "@availabs/avl-components"
 
-import ClassTable from "./ClassTable"
-import StationsTable from "./StationsTable"
-import VMTBarGraph from "./VMTBarGraph"
-
-import { YEARS } from "../wrappers/short"
+import ClassTable from "./components/ClassTable"
+import StationsTable from "./components/StationsTable"
+import VMTBarGraph from "./components/VMTBarGraph"
 
 const floatFormat = d3format(",.1f");
 
@@ -16,7 +14,7 @@ const Short = ({ loading,
                   stations,
                   Region, setRegion, regions,
                   fClassData, allClassData,
-                  year, setYear }) => {
+                  year, setYear, years }) => {
 
   const updateRegion = React.useCallback(v =>
     setRegion(v ? v.region : null)
@@ -46,7 +44,7 @@ const Short = ({ loading,
         <div className="w-full max-w-xs flex items-center">
           <span className="mr-2">Year:</span>
           <div className="flex-1">
-            <Select options={ YEARS }
+            <Select options={ years }
               accessor={ v => v }
               onChange={ setYear } value={ year }
               multi={ false } searchable={ false } removable={ false }/>
