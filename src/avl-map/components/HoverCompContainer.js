@@ -60,7 +60,7 @@ export const HoverCompContainer = ({ show, children, ...rest }) => {
         display: show ? "inline-block" : "none",
         transform: getTranslate(rest),
         boxShadow: "2px 2px 8px 0px rgba(0, 0, 0, 0.75)",
-        transition: "transform 0.15s ease-out"
+        transition: "transform 0.1s ease-out"
       } }>
       { children }
     </div>

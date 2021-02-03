@@ -1,6 +1,8 @@
 
 import get from "lodash.get"
 
+import { rollups } from "d3"
+
 import MapLayer, { getFilter } from "avl-map/MapLayer"
 
 class TestLayer1 extends MapLayer {
@@ -37,15 +39,18 @@ class TestLayer1 extends MapLayer {
     // }
   }
   onHover = {
-    layers: ["counties", "cousubs"],
+    layers: ["Counties", "Cousubs"],
     callback: (features, lngLat, layer) => {
-      return [
-        [this.name],
-        ...features.map(f => ["GEOID", f.properties.geoid]),
-        ["Fake 1", "data..."],
-        ["Fake 2", "data..."],
-        ["Fake 3", "data..."]
-      ];
+
+      const data = rollups(
+        features, group => group.map(f => f.properties.geoid), f => f.layer.id
+      ).reduce((a, [layer, geoids]) => {
+        a.push([layer],
+          ...geoids.map(geoid => ["GeoID", geoid])
+        );
+        return a;
+      }, []);
+      return data;
     }
   }
   // onClick = {
@@ -75,7 +80,7 @@ class TestLayer1 extends MapLayer {
     }
   ]
   layers = [
-    { id: "counties",
+    { id: "Counties",
       filter: ["boolean", false],
       "source-layer": "counties",
       source: "counties",
@@ -96,7 +101,7 @@ class TestLayer1 extends MapLayer {
         ]
       }
     },
-    { id: "cousubs",
+    { id: "Cousubs",
       filter: ["boolean", false],
       "source-layer": "cousubs",
       source: "cousubs",
@@ -144,18 +149,18 @@ class TestLayer1 extends MapLayer {
   render(map) {
     const counties = get(this, ["filters", "counties", "value"], []);
     if (counties.length) {
-      map.setFilter("counties", ["match", ["get", "geoid"], counties, true, false]);
+      map.setFilter("Counties", ["match", ["get", "geoid"], counties, true, false]);
     }
     else {
-      map.setFilter("counties", ["boolean", false]);
+      map.setFilter("Counties", ["boolean", false]);
     }
 
     const cousubs = get(this, ["filters", "cousubs", "value"], []);
     if (cousubs.length) {
-      map.setFilter("cousubs", ["match", ["get", "geoid"], cousubs, true, false]);
+      map.setFilter("Cousubs", ["match", ["get", "geoid"], cousubs, true, false]);
     }
     else {
-      map.setFilter("cousubs", ["boolean", false]);
+      map.setFilter("Cousubs", ["boolean", false]);
     }
   }
   // receiveProps(props) {
