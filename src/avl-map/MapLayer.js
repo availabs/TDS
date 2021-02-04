@@ -146,7 +146,6 @@ class MapLayer {
     });
 
     this.onHover.layers.forEach(layer => {
-
       map.on("mousemove", layer, mousemove);
       map.on("mouseleave", layer, mouseleave);
       map.on("click", layer, click);

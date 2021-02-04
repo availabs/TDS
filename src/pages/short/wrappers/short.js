@@ -50,16 +50,12 @@ const shortWrapper = Component =>
       falcor.get([
         "ris", "byRegion", region, YEARS, "byClass", CLASSES,
         ['functional_class', 'aadt', 'length', 'vmt']
-      ]).then(() => falcor.get(["hds", "short", "stations", region, year, "length"]))
+      ]).then(() => falcor.get(["hds", "short", "stations", "aggregate", region, year, "length"]))
         .then(res => {
-          const length = +get(res, ["json", "hds", "short", "stations", region, year, "length"], 0);
+          const length = +get(res, ["json", "hds", "short", "stations", "aggregate", region, year, "length"], 0);
           if (length) {
-            const indices = [];
-            for (let i = 0; i < length; ++i) {
-              indices.push(i);
-            }
             return falcor.get(
-              ["hds", "short", "stations", region, year, "byIndex",
+              ["hds", "short", "stations", "aggregate", region, year, "byIndex",
                 { from: 0, to: length - 1 }, "array"
               ]
             )
@@ -69,12 +65,12 @@ const shortWrapper = Component =>
     }, [falcor, region, setLoading, year]);
 
     const stations = React.useMemo(() => {
-      const length = +get(falcorCache, ["hds", "short", "stations", region, year, "length"], 0);
+      const length = +get(falcorCache, ["hds", "short", "stations", "aggregate", region, year, "length"], 0);
 
       const stations = [];
 
       for (let i = 0; i < length; ++i) {
-        const ref = get(falcorCache, ["hds", "short", "stations", region, year, "byIndex", i, "value"]),
+        const ref = get(falcorCache, ["hds", "short", "stations", "aggregate", region, year, "byIndex", i, "value"]),
           data = get(falcorCache, ref);
         if (data) {
           stations.push(...get(data, ["array", "value"], []));

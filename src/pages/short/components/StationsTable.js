@@ -31,13 +31,13 @@ const Columns = [
     Cell: ({ value }) => intFormat(value),
     disableFilters: true
   },
-  { accessor: "aadt_single_unit",
-    Header: "AADT Single",
+  { accessor: "aadt_combo",
+    Header: "AADT Combo",
     Cell: ({ value }) => intFormat(value),
     disableFilters: true
   },
-  { accessor: "aadt_combo",
-    Header: "AADT Combo",
+  { accessor: "aadt_single_unit",
+    Header: "AADT Single",
     Cell: ({ value }) => intFormat(value),
     disableFilters: true
   }

@@ -3,21 +3,33 @@ import React from "react"
 import styled from "styled-components"
 import { format as d3format } from "d3"
 
+import { useTheme } from "@availabs/avl-components"
+
 import StationVMTGraph from "./components/StationVMTGraph"
+import StationTable from "./components/StationTable"
 
 const aadtFormat = d3format(",d"),
   vmtFormat = d3format(",.1f");
 
 const selector = ({ year }) => year;
 
-const ShortStation = ({ station, years }) => {
+const ShortStation = ({ station, years, stations }) => {
+  const [year, setYear] = React.useState(years[0]);
+
+  const stationsByYear = React.useMemo(() =>
+    stations.filter(s => +s.year === +year)
+  , [stations, year]);
+
   return (
     <div className="mx-10 my-8 grid grid-cols-2 gap-6">
       <div className="text-5xl font-bold col-span-2">
         Station ID: { station.stationId }
       </div>
+
+      <div className="col-span-2 border-2 rounded-sm"/>
+
       <div className="col-span-1">
-        <TabSelector startTab={ years[0] }
+        <TabSelector currentTab={ year } setTab={ setYear }
           selector={ selector }
           data={ station.data }
           Selected={ Selected }/>
@@ -26,6 +38,12 @@ const ShortStation = ({ station, years }) => {
         col-span-1 flex items-center rounded bg-blueGray-800 h-full
       ` }>
         <StationVMTGraph data={ station.data }/>
+      </div>
+
+      <div className="col-span-2 border-2 rounded-sm"/>
+
+      <div className="col-span-2">
+        <StationTable station={ stationsByYear }/>
       </div>
     </div>
   )
@@ -46,7 +64,7 @@ const Station = props => {
     road_name, length, functional_class
   } = props;
 
-  const roads = road_name.split(",");
+  const classes = functional_class.split(",").sort((a, b) => +a - +b);
 
   return (
     <>
@@ -63,10 +81,10 @@ const Station = props => {
         <Row row={ ["AADT (car)", aadtFormat(aadt - (aadt_combo + aadt_single_unit))] }/>
         <Row row={ ["AADT (truck)", aadtFormat(aadt_combo + aadt_single_unit)] }/>
         <Separator />
-        <Row row={ ["Miles", length] }/>
-        <Row row={ ["Functional Class", functional_class] }/>
-        <ExpandRow row={ [`Road Name${ roads.length > 1 ? "s" : "" }`, roads[0]] }
-          expand={ roads.slice(1) }/>
+        <Row row={ ["Miles", vmtFormat(length)] }/>
+        <Row row={ [`${ classes.length > 5 ? "Func." : "Functional" } Class${ classes.length > 1 ? "es" : "" }`, classes.join(", ")] }/>
+        <ExpandRow row={ [`Road Name${ road_name.length > 1 ? "s" : "" }`, road_name[0]] }
+          expand={ road_name.slice(1) }/>
       </div>
       <div className="col-span-1 bg-blueGray-700 h-full flex flex-col justify-center items-center">
         <span className="fa fa-map text-9xl"/>
@@ -96,13 +114,13 @@ const ExpandRowContainer = styled.div`
     display: none;
     position: absolute;
     top: 100%;
-    right: 0px;
+    left: 0px;
   }
   & > * {
     border-bottom-right-radius: 0px;
   }
   &:hover .expand {
-    display: block;
+    display: flex;
     pointer-events: none;
   }
 `
@@ -112,9 +130,15 @@ const ExpandRow = ({ row, expand }) => {
       <Row row={ row }/>
 
       { !expand.length ? null :
-        <div className="expand rounded-bl rounded-br bg-blueGray-600 px-2 text-large leading-7">
+        <div style={ {
+            maxHeight: "500px"
+          } }
+          className={ `
+            expand rounded-bl rounded-br bg-blueGray-600 px-2 pb-2
+            overflow-auto scrollbar-sm flex-row-reverse flex-wrap w-full
+          ` }>
           { expand.map((v, i) =>
-              <div key={ i }>{ v }</div>
+              <div className="rounded bg-blueGray-500 px-2 ml-1 mb-1 flex-0 text-large leading-7" key={ i }>{ v }</div>
             )
           }
         </div>
@@ -125,26 +149,22 @@ const ExpandRow = ({ row, expand }) => {
 
 const Compare = (a, b) => a === b;
 
-const TabSelector = ({ startTab, selector, data, Selected, fullTabs = false, compare = Compare, Tab = DefaultTab }) => {
-
-  const [current, setCurrent] = React.useState(startTab);
-
-  React.useEffect(() => {
-    setCurrent(startTab);
-  }, [startTab]);
+const TabSelector = ({ currentTab, setTab, selector, data, Selected, fullTabs = false, compare = Compare, Tab = DefaultTab }) => {
 
   const tabs = React.useMemo(() => {
     return data.map(d => {
       const tab = selector(d);
       return {
         tab,
-        isCurrent: compare(current, tab),
-        onClick: e => setCurrent(tab)
+        isCurrent: compare(currentTab, tab),
+        onClick: e => setTab(tab)
       }
     })
-  }, [data, current, setCurrent, compare, selector]);
+  }, [data, currentTab, setTab, compare, selector]);
 
-  const selected = data.find(d => compare(current, selector(d)));
+  const theme = useTheme();
+
+  const selected = data.find(d => compare(currentTab, selector(d)));
 
   return (
     <div>
@@ -157,7 +177,7 @@ const TabSelector = ({ startTab, selector, data, Selected, fullTabs = false, com
         }
       </TabContainer>
       <div className={ `
-        p-4 bg-blueGray-800 rounded-bl rounded-br
+        p-4 ${ theme.menuBg } rounded-bl rounded-br
         ${ fullTabs ? "" : "rounded-tr" }
       ` }>
         <Selected selected={ selected }/>
@@ -171,13 +191,21 @@ const TabContainer = styled.div`
     margin-right: 0px;
   }
 `
-const DefaultTab = ({ isCurrent, onClick, children, full = false }) => (
-  <div onClick={ onClick }
-    className={ `
-      rounded-tl rounded-tr pt-1 px-5 bg-blueGray-800 text-lg
-      mr-2 border-b-2 ${ full ? "flex-1" : "flex-0" } text-center
-      ${ isCurrent ? "border-current" : "border-transparent cursor-pointer" }
-    ` }>
-    { children }
-  </div>
-)
+const DefaultTab = ({ isCurrent, onClick, children, full = false }) => {
+  const theme = useTheme();
+  return (
+    <div onClick={ onClick }
+      className={ `
+        ${ isCurrent ?
+          `${ theme.menuTextActive } ${ theme.menuTextActiveHover }` :
+          `${ theme.menuBgHover } ${ theme.menuText } ${ theme.menuTextHover }`
+        }
+        ${ theme.menuBg }
+        rounded-tl rounded-tr pt-1 px-5 text-lg
+        mr-2 border-b-2 ${ full ? "flex-1" : "flex-0" } text-center
+        ${ isCurrent ? "border-current" : "border-transparent cursor-pointer" }
+      ` }>
+      { children }
+    </div>
+  )
+}

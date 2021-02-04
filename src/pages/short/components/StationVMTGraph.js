@@ -4,7 +4,7 @@ import { format as d3format } from "d3"
 
 import { useTheme } from "@availabs/avl-components"
 
-import { BarGraph, getColorRange } from "avl-graph/src"
+import { BarGraph } from "avl-graph/src"
 
 const indexFormat = i => `Year ${ i }`,
   valueFormat = d3format(",.1f");

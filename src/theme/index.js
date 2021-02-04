@@ -38,7 +38,7 @@ const TDS_THEME_BASE = {
 	menuBgActive: 'bg-blueGray-700',
 	menuBgActiveHover: 'hover:bg-blueGray-600',
 	menuText : "text-gray-100",
-	menuTextHover: "hover:text-white",
+	menuTextHover: "hover:text-cyan-300",
 	menuTextActive: "text-cyan-300",
 	menuTextActiveHover: "hover:text-cyan-200",
 
