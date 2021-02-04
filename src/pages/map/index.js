@@ -62,7 +62,7 @@ const MapPage = {
         zoom: 9
       },
       layers: [
-        layerFactory1()
+        layerFactory1({ isVisible: true })
       ]
     },
     wrappers: [

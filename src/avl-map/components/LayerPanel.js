@@ -2,9 +2,9 @@ import React from "react"
 
 import { Select } from "@availabs/avl-components"
 
-const LayerPanel = ({ layer, removeLayer }) => {
+const LayerPanel = ({ layer, ...rest }) => {
   const [open, setOpen] = React.useState(true),
-    toggle = React.useCallback(e => {
+    toggleOpen = React.useCallback(e => {
       setOpen(!open);
     }, [open, setOpen]);
 
@@ -14,9 +14,8 @@ const LayerPanel = ({ layer, removeLayer }) => {
 
   return (
     <div className="bg-blueGray-800 p-1 mb-1 rounded">
-      <LayerHeader layer={ layer }
-        open={ open } toggle={ toggle }
-        removeLayer={ removeLayer }/>
+      <LayerHeader layer={ layer } { ...rest }
+        open={ open } toggleOpen={ toggleOpen }/>
       <div style={ { display: open ? "block" : "none" } }>
         { filters }
       </div>
@@ -53,10 +52,12 @@ export const Icon = ({ onClick, cursor="cursor-pointer", className="", style={},
   </div>
 )
 
-const LayerHeader = ({ layer, toggle, open, removeLayer }) => {
+const LayerHeader = ({ layer, toggleOpen, toggleVisibility, open, removeLayer }) => {
+
   const remove = React.useCallback(e => {
     removeLayer(layer);
-  }, [layer, removeLayer])
+  }, [layer, removeLayer]);
+
   return (
     <div className="flex flex-col px-1 bg-blueGray-700 rounded">
       <div className="flex items-center"
@@ -71,7 +72,7 @@ const LayerHeader = ({ layer, toggle, open, removeLayer }) => {
           <Icon onClick={ remove }>
             <span className="fa fa-times mr-1"/>
           </Icon>
-          <Icon onClick={ toggle }>
+          <Icon onClick={ toggleOpen }>
             <span className={ `fa fa-sm ${ open ? 'fa-minus' : 'fa-plus' }` }/>
           </Icon>
         </div>
@@ -86,8 +87,8 @@ const LayerHeader = ({ layer, toggle, open, removeLayer }) => {
             <span className="fa fa-sm fa-map mr-1"/>
           </Icon> */
         }
-        <Icon onClick={ null }>
-          <span className="fa fa-sm fa-eye"/>
+        <Icon onClick={ e => toggleVisibility(layer) }>
+          <span className={ `fa fa-sm ${ layer.isVisible ? "fa-eye" : "fa-eye-slash" }` }/>
         </Icon>
       </div>
     </div>

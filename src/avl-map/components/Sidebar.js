@@ -7,9 +7,7 @@ import CollapsibleSidebar from "../avl-components/CollapsibleSidebar"
 import LayerPanel from "./LayerPanel"
 
 const Sidebar = ({ inactiveLayers, activeLayers,
-                    addLayer,
-                    removeLayer,
-                    title = "" }) => {
+                    addLayer, title = "", ...rest }) => {
 
   return (
     <CollapsibleSidebar>
@@ -32,8 +30,7 @@ const Sidebar = ({ inactiveLayers, activeLayers,
           </div>
         }
         { activeLayers.map(layer =>
-            <LayerPanel key={ layer.id }
-              removeLayer={ removeLayer }
+            <LayerPanel key={ layer.id } { ...rest }
               layer={ layer }/>
           )
         }

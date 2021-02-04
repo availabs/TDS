@@ -3,9 +3,9 @@ import get from "lodash.get"
 
 import { rollups } from "d3"
 
-import MapLayer, { getFilter } from "avl-map/MapLayer"
+import LayerContainer, { getFilter } from "avl-map/LayerContainer"
 
-class TestLayer1 extends MapLayer {
+class TestLayer1 extends LayerContainer {
   name = "Counties"
 
   filters = {
@@ -23,7 +23,7 @@ class TestLayer1 extends MapLayer {
       name: "Cousubs",
       type: "select",
       domain: [],
-      value: [],
+      value: ["3600101000"],
       searchable: true,
       accessor: d => d.name,
       valueAccessor: d => d.geoid,
@@ -40,12 +40,12 @@ class TestLayer1 extends MapLayer {
   }
   onHover = {
     layers: ["Counties", "Cousubs"],
-    callback: (features, lngLat, layer) => {
+    callback: (layerId, features, lngLat) => {
 
       const data = rollups(
         features, group => group.map(f => f.properties.geoid), f => f.layer.id
-      ).reduce((a, [layer, geoids]) => {
-        a.push([layer],
+      ).reduce((a, [layerId, geoids]) => {
+        a.push([layerId],
           ...geoids.map(geoid => ["GeoID", geoid])
         );
         return a;
@@ -81,11 +81,18 @@ class TestLayer1 extends MapLayer {
   ]
   layers = [
     { id: "Counties",
-      filter: ["boolean", false],
+      filter: false,
       "source-layer": "counties",
       source: "counties",
       type: "fill",
+      // layout: {
+      //   visibility: "visible"
+      // },
       paint: {
+        "fill-color-transition": {
+          duration: 1000,
+          delay: 0
+        },
         "fill-color": [
           "case",
           ["boolean", ["feature-state", "hover"], false],
@@ -102,10 +109,13 @@ class TestLayer1 extends MapLayer {
       }
     },
     { id: "Cousubs",
-      filter: ["boolean", false],
+      filter: false,
       "source-layer": "cousubs",
       source: "cousubs",
       type: "fill",
+      // layout: {
+      //   visibility: "none"
+      // },
       paint: {
         "fill-color": [
           "case",
@@ -149,18 +159,18 @@ class TestLayer1 extends MapLayer {
   render(map) {
     const counties = get(this, ["filters", "counties", "value"], []);
     if (counties.length) {
-      map.setFilter("Counties", ["match", ["get", "geoid"], counties, true, false]);
+      map.setFilter("Counties", ["in", ["get", "geoid"], ["literal", counties]]);
     }
     else {
-      map.setFilter("Counties", ["boolean", false]);
+      map.setFilter("Counties", false);
     }
 
     const cousubs = get(this, ["filters", "cousubs", "value"], []);
     if (cousubs.length) {
-      map.setFilter("Cousubs", ["match", ["get", "geoid"], cousubs, true, false]);
+      map.setFilter("Cousubs", ["in", ["get", "geoid"], ["literal", cousubs]]);
     }
     else {
-      map.setFilter("Cousubs", ["boolean", false]);
+      map.setFilter("Cousubs", false);
     }
   }
   // receiveProps(props) {

@@ -39,6 +39,9 @@ const DefaultMapOptions = {
 let idCounter = 0;
 const getUniqueId = () => `unique-id-${ ++idCounter }`;
 
+const reduceHoverData = ({ data }) =>
+  [...data.values()].reduce((a, c) => a.concat(c), []);
+
 const DefaultState = {
   map: null,
   activeLayers: [],
@@ -48,9 +51,8 @@ const DefaultState = {
   layersLoading: {},
   hoverData: {
     HoverComp: null,
-    data: [],
+    data: new Map(),
     pos: [0, 0],
-    show: false,
     lngLat: {}
   },
   pinnedHoverComps: []
@@ -109,12 +111,36 @@ const Reducer = (state, action) => {
           ...payload.hoverData
         }
       };
+    case "layer-move": {
+      const { data, layerId, ...rest } = payload;
+      state.hoverData.data.set(layerId, data);
+      return {
+        ...state,
+        hoverData: {
+          ...state.hoverData,
+          ...rest
+        }
+      }
+    }
+    case "layer-leave": {
+      const { layerId } = payload;
+      state.hoverData.data.delete(layerId);
+      return {
+        ...state,
+        hoverData: {
+          ...state.hoverData
+        }
+      }
+    }
     case "pin-hover-comp":
       return {
         ...state,
         pinnedHoverComps: [
           ...state.pinnedHoverComps,
-          { ...state.hoverData, id: getUniqueId() }
+          { ...state.hoverData,
+            id: getUniqueId(),
+            data: reduceHoverData(state.hoverData)
+          }
         ]
       }
     case "remove-pinned":
@@ -176,11 +202,11 @@ const AvlMap = props => {
     });
 
 
-    map.on("move", () => {
-      dispatch({ type: "update-state", mapMoved: Date.now() });
+    map.on("move", e => {
+      dispatch({ type: "update-state", mapMoved: performance.now() });
     });
 
-    map.on("load", () => {
+    map.on("load", e => {
       dispatch({ type: "map-loaded", map });
     });
 
@@ -204,7 +230,8 @@ const AvlMap = props => {
       }
     };
 
-    layer.fetchData(falcor, falcorCache)
+    Promise.resolve(layer.onFilterChange(filterName, value, prevValue))
+      .then(() => layer.fetchData(falcor, falcorCache))
       .then(() => layer.render(state.map, falcorCache))
       .then(() => {
         dispatch({ type: "loading-stop", layerId: layer.id });
@@ -214,13 +241,9 @@ const AvlMap = props => {
 
   const updateHover = React.useMemo(() => {
     return hoverData => {
-      dispatch({
-        type: "update-hover",
-        hoverData
-      });
+      dispatch(hoverData);
     };
   }, []);
-
   const pinHoverComp = React.useCallback(hoverData => {
     dispatch({
       type: "pin-hover-comp",
@@ -233,6 +256,12 @@ const AvlMap = props => {
       compId
     });
   }, []);
+
+  const toggleVisibility = React.useCallback(layer => {
+    layer.toggleVisibility(state.map);
+    dispatch({ type: "update-state" });
+  }, [state.map]);
+
   const projectLngLat = React.useCallback(lngLat => {
     return state.map.project(lngLat);
   }, [state.map]);
@@ -290,7 +319,6 @@ const AvlMap = props => {
   }, [layers, state.map, updateFilter, initializedLayers, falcor, falcorCache, updateHover, pinHoverComp]);
 
   const [activeLayers, inactiveLayers] = React.useMemo(() => {
-    // return layers.filter(({ id }) => state.activeLayers.includes(id));
     return layers.reduce((a, c) => {
       if (state.activeLayers.includes(c.id)) {
         a[0].push(c);
@@ -331,10 +359,15 @@ const AvlMap = props => {
     return activeLayers.filter(layer => Boolean(state.layersLoading[layer.id]));
   }, [activeLayers, state.layersLoading]);
 
-  const ref = React.useRef(null),
-    { HoverComp, data,
-      ...hoverData
-    } = get(state, "hoverData", {});
+  const ref = React.useRef(null);
+
+  const {
+    HoverComp, data,
+    ...hoverData
+  } = React.useMemo(() => {
+    const data = reduceHoverData(state.hoverData);
+    return { ...state.hoverData, show: Boolean(data.length), data };
+  }, [state.hoverData]);
 
   const size = useSetSize(ref);
 
@@ -343,6 +376,7 @@ const AvlMap = props => {
       <div id={ id } className="flex-grow" ref={ ref }/>
 
       <Sidebar { ...sidebar }
+        toggleVisibility={ toggleVisibility }
         inactiveLayers={ inactiveLayers }
         activeLayers={ activeLayers }
         addLayer={ addLayer }
