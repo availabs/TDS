@@ -35,7 +35,7 @@ const ShortStation = ({ station, years, stations }) => {
           Selected={ Selected }/>
       </div>
       <div className={ `
-        col-span-1 flex items-center rounded bg-blueGray-800 h-full
+        col-span-1 rounded bg-blueGray-800 h-full w-full
       ` }>
         <StationVMTGraph data={ station.data }/>
       </div>

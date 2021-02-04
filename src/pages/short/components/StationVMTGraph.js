@@ -32,21 +32,23 @@ const StationVMTGraph = ({ data }) => {
   const theme = useTheme();
 
   return (
-    <BarGraph data={ graphData }
-      margin={ { left: 100, bottom: 50 } }
-      keys={ ["cars", "trucks"] }
-      padding={ 0.5 }
-      theme={ theme }
-      hoverComp={ {
-        indexFormat,
-        valueFormat
-      } }
-      axisLeft={ {
-        label: "VMT by Vehicle Type"
-      } }
-      axisBottom={ {
-        label: "Years"
-      } }/>
+    <div style={ { minHeight: "400px" } } className="w-full h-full">
+      <BarGraph data={ graphData }
+        margin={ { left: 100, bottom: 50 } }
+        keys={ ["cars", "trucks"] }
+        padding={ 0.5 }
+        theme={ theme }
+        hoverComp={ {
+          indexFormat,
+          valueFormat
+        } }
+        axisLeft={ {
+          label: "VMT by Vehicle Type"
+        } }
+        axisBottom={ {
+          label: "Years"
+        } }/>
+    </div>
   )
 }
 export default StationVMTGraph;
