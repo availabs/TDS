@@ -1,8 +1,8 @@
 import React from "react"
 
-const DefaultHoverComp = ({ data }) => {
+const DefaultHoverComp = ({ data, layer }) => {
   return (
-    <div className="py-2 px-4 rounded bg-blueGray-500">
+    <div className="px-2">
       { data.map((row, i) =>
           <div key={ i } className="flex">
             { row.map((d, ii) =>

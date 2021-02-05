@@ -6,11 +6,13 @@ import CollapsibleSidebar from "../avl-components/CollapsibleSidebar"
 
 import LayerPanel from "./LayerPanel"
 
-const Sidebar = ({ inactiveLayers, activeLayers,
-                    addLayer, title = "", ...rest }) => {
+const Sidebar = ({ inactiveLayers, activeLayers, toggleOpen, open,
+                    MapActions, title = "", children, ...rest }) => {
 
   return (
-    <CollapsibleSidebar>
+    <CollapsibleSidebar open={ open }
+      toggle={ toggleOpen }
+      placeBeside={ children }>
       <div className="p-1 h-full bg-blueGray-900 rounded">
         { !title ? null :
           <div className="text-xl font-bold">
@@ -25,13 +27,13 @@ const Sidebar = ({ inactiveLayers, activeLayers,
                 accessor={ ({ name }) => name }
                 value={ null } multi={ false }
                 searchable={ false }
-                onChange={ addLayer }/>
+                onChange={ MapActions.addLayer }/>
             </div>
           </div>
         }
         { activeLayers.map(layer =>
             <LayerPanel key={ layer.id } { ...rest }
-              layer={ layer }/>
+              layer={ layer } MapActions={ MapActions }/>
           )
         }
       </div>

@@ -1,14 +1,13 @@
 import React from "react"
 
-import { useHistory } from "react-router-dom"
-
 import get from "lodash.get"
 
 import AvlMap from "avl-map"
 
 import { MAPBOX_TOKEN } from "config.private"
 
-import { layerFactory1 } from "./layers/TestLayer"
+import { TestCountyLayerFactory } from "./layers/TestCountyLayer"
+import { TestCousubLayerFactory } from "./layers/TestCousubLayer"
 
 const Map = ({ mapOptions, layers, falcor, falcorCache }) => {
 
@@ -22,19 +21,8 @@ const Map = ({ mapOptions, layers, falcor, falcorCache }) => {
       });
   }, [falcor]);
 
-  const history = useHistory();
-
-  // const layerProps = React.useMemo(() => {
-  //   return {
-  //     [layers[0].id]: {
-  //       history
-  //     }
-  //   }
-  // }, [layers, history]);
-
   return (
     <AvlMap accessToken={ MAPBOX_TOKEN }
-      // layerProps={ layerProps }
       sidebar={ {
         title: "Map Test",
         layers: ["layers", "styles"]
@@ -62,7 +50,8 @@ const MapPage = {
         zoom: 9
       },
       layers: [
-        layerFactory1({ isVisible: true })
+        TestCountyLayerFactory(),
+        TestCousubLayerFactory()
       ]
     },
     wrappers: [

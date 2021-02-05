@@ -1,30 +1,24 @@
-import throttle from "lodash.throttle"
-
 import { hasValue } from "@availabs/avl-components"
 
 import DefaultHoverComp from "./components/DefaultHoverComp"
 
 import get from "lodash.get"
 
-let num = -1;
-const getLayerId = () => `avl-layer-${ ++num }`;
+let id = -1;
+const getLayerId = () => `avl-layer-${ ++id }`;
 
 const DefaultCallback = () => null;
 
-export const getFilter = (filters, filterName) => {
-  return filters.reduce((a, c) => {
-    return c.name === filterName ? c : a;
-  }, null);
-};
-
 const DefaultOptions = {
   setActive: true,
+  isDynamic: false,
   filters: {},
   modals: {},
   mapActions: [],
   sources: [],
   layers: [],
-  isVisible: true
+  isVisible: true,
+  toolbar: ["toggle-visibility"]
 }
 
 class LayerContainer {
@@ -38,15 +32,22 @@ class LayerContainer {
     }
     this.layerVisibility = {};
 
+    this.needsRender = this.setActive;
+
     this.callbacks = [];
     this.hoveredFeatures = new Map();
 
     // this.toggleVisibility = this.toggleVisibility.bind(this);
   }
-  _init(map, falcor, falcorCache) {
-    return this.init(falcor, falcorCache);
+  _init(map, falcor) {
+    this.sources.forEach(({ id, source }) => {
+      if (!map.getSource(id)) {
+        map.addSource(id, source);
+      }
+    });
+    return this.init(map, falcor);
   }
-  init(falcor, falcorCache) {
+  init(map, falcor) {
     return Promise.resolve({
       filters: this.filters,
       modals: this.modals,
@@ -54,12 +55,7 @@ class LayerContainer {
     });
   }
 
-  _onAdd(map, falcor, falcorCache, updateHover, pinHoverComp) {
-    this.sources.forEach(({ id, source }) => {
-      if (!map.getSource(id)) {
-        map.addSource(id, source);
-      }
-    });
+  _onAdd(map, falcor, updateHover) {
     this.layers.forEach(layer => {
       if (!map.getLayer(layer.id)) {
         map.addLayer(layer);
@@ -72,14 +68,14 @@ class LayerContainer {
       }
     });
     if (this.onHover) {
-      this.addHover(map, updateHover, pinHoverComp);
+      this.addHover(map, updateHover);
     }
     if (this.onClick) {
       this.addClick(map);
     }
-    return this.onAdd(map, falcor, falcorCache);
+    return this.onAdd(map, falcor);
   }
-  onAdd(map, falcor, falcorCache) {
+  onAdd(map, falcor) {
     return Promise.resolve();
   }
 
@@ -88,25 +84,28 @@ class LayerContainer {
       const properties = features.map(({ properties }) => ({ ...properties }));
       this.onClick.callback.call(this, properties, lngLat, point);
     };
-    this.callbacks.push({
-      action: "click",
-      callback: click,
-      layers: [...this.onClick.layers]
-    });
 
-    this.onClick.layers.forEach(layer => {
-      map.on("click", layer, click);
+    this.onClick.layers.forEach(layerId => {
+      const callback = click.bind(this);
+      this.callbacks.push({
+        action: "click",
+        callback,
+        layerId
+      });
+      map.on("click", layerId, callback);
     });
   }
 
   hoverLeave(map, layerId) {
+    if (!this.hoveredFeatures.has(layerId)) return;
+
     this.hoveredFeatures.get(layerId).forEach(value => {
       map.setFeatureState(value, { hover: false });
     });
     this.hoveredFeatures.delete(layerId);
   }
 
-  addHover(map, updateHover, pinHoverComp) {
+  addHover(map, updateHover) {
 
     const callback = get(this, ["onHover", "callback"], DefaultCallback).bind(this),
       HoverComp = get(this, ["onHover", "HoverComp"], DefaultHoverComp);
@@ -138,7 +137,7 @@ class LayerContainer {
           pos: [point.x, point.y],
           type: "layer-move",
           HoverComp,
-          layerId,
+          layer: this,
           lngLat,
           data
         });
@@ -149,43 +148,33 @@ class LayerContainer {
       this.hoverLeave(map, layerId);
       updateHover({
         type: "layer-leave",
-        layerId
+        layer: this
       });
     };
 
-    const click = pinHoverComp.bind(this);
-
-    this.onHover.layers.forEach(layer => {
-      let callback = mousemove.bind(this, layer);
+    this.onHover.layers.forEach(layerId => {
+      let callback = mousemove.bind(this, layerId);
       this.callbacks.push({
         action: "mousemove",
         callback,
-        layer
+        layerId
       });
-      map.on("mousemove", layer, callback);
+      map.on("mousemove", layerId, callback);
 
-      callback = mouseleave.bind(this, layer);
+      callback = mouseleave.bind(this, layerId);
       this.callbacks.push({
         action: "mouseleave",
         callback,
-        layer
+        layerId
       });
-      map.on("mouseleave", layer, callback);
-
-      callback = click.bind(this, layer);
-      this.callbacks.push({
-        action: "click",
-        callback,
-        layer
-      });
-      map.on("click", layer, callback);
+      map.on("mouseleave", layerId, callback);
     }, this);
   }
 
   _onRemove(map) {
     while (this.callbacks.length) {
-      const { action, layer, callback } = this.callbacks.pop();
-      map.off(action, layer, callback);
+      const { action, layerId, callback } = this.callbacks.pop();
+      map.off(action, layerId, callback);
     }
     this.layers.forEach(({ id }) => {
       map.removeLayer(id);
@@ -199,11 +188,11 @@ class LayerContainer {
   fetchData() {
     return Promise.resolve();
   }
-  render(map, falcorCache) {
+  render(map, falcor) {
 
   }
 
-  receiveProps(props, map, falcor, falcorCache) {
+  receiveProps(props) {
 
   }
 
@@ -244,9 +233,9 @@ class LayerContainer {
 
   }
 
-  onMapStyleChange(map, falcor, falcorCache, updateHover, pinHoverComp) {
-    this._onAdd(map, falcor, falcorCache, updateHover, pinHoverComp)
-      .then(() => this.render(map, falcorCache))
+  onMapStyleChange(map, falcor, updateHover) {
+    this._onAdd(map, falcor, updateHover)
+      .then(() => this.render(map))
   }
 }
 export default LayerContainer;

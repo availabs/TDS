@@ -10,7 +10,7 @@ const LoadingLayer = ({ layer, progress }) => {
         borderTopRightRadius: "25px",
         borderBottomRightRadius: "25px",
         padding: "5px 5px 5px 10px",
-        marginBottom: "10px"
+        marginTop: "8px"
       } }>
       <div className="flex-1 text-xl font-bold">
         { layer.name }

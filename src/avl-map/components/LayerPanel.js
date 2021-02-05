@@ -1,8 +1,8 @@
 import React from "react"
 
-import { Select } from "@availabs/avl-components"
+import { Select, useTheme } from "@availabs/avl-components"
 
-const LayerPanel = ({ layer, ...rest }) => {
+const LayerPanel = ({ layer, layersLoading, ...rest }) => {
   const [open, setOpen] = React.useState(true),
     toggleOpen = React.useCallback(e => {
       setOpen(!open);
@@ -12,8 +12,15 @@ const LayerPanel = ({ layer, ...rest }) => {
     return generateFilters(Object.values(layer.filters));
   }, [layer.filters]);
 
+  const theme = useTheme();
+
   return (
-    <div className="bg-blueGray-800 p-1 mb-1 rounded">
+    <div className="bg-blueGray-800 p-1 mb-1 rounded relative">
+      <div className={ `
+          absolute top-0 bottom-0 left-0 right-0 z-10
+          ${ Boolean(layersLoading[layer.id]) ? "block" : "hidden" }
+          ${ theme.sidebarBg } opacity-50
+        ` }/>
       <LayerHeader layer={ layer } { ...rest }
         open={ open } toggleOpen={ toggleOpen }/>
       <div style={ { display: open ? "block" : "none" } }>
@@ -52,11 +59,7 @@ export const Icon = ({ onClick, cursor="cursor-pointer", className="", style={},
   </div>
 )
 
-const LayerHeader = ({ layer, toggleOpen, toggleVisibility, open, removeLayer }) => {
-
-  const remove = React.useCallback(e => {
-    removeLayer(layer);
-  }, [layer, removeLayer]);
+const LayerHeader = ({ layer, toggleOpen, open, MapActions }) => {
 
   return (
     <div className="flex flex-col px-1 bg-blueGray-700 rounded">
@@ -69,8 +72,13 @@ const LayerHeader = ({ layer, toggleOpen, toggleVisibility, open, removeLayer })
           { layer.name }
         </div>
         <div className="flex-1 flex justify-end">
-          <Icon onClick={ remove }>
-            <span className="fa fa-times mr-1"/>
+          { !layer.isDynamic ? null :
+            <Icon onClick={ e => MapActions.removeDynamicLayer(layer) }>
+              <span className="fa fa-trash"/>
+            </Icon>
+          }
+          <Icon onClick={ e => MapActions.removeLayer(layer) }>
+            <span className="fa fa-times"/>
           </Icon>
           <Icon onClick={ toggleOpen }>
             <span className={ `fa fa-sm ${ open ? 'fa-minus' : 'fa-plus' }` }/>
@@ -79,18 +87,37 @@ const LayerHeader = ({ layer, toggleOpen, toggleVisibility, open, removeLayer })
       </div>
       <div className="flex items-center"
         style={ { marginTop: "-3px" } }>
-        { /*
-          <Icon onClick={ null }>
-            <span className="fa fa-sm fa-cog mr-1"/>
-          </Icon>
-          <Icon onClick={ null }>
-            <span className="fa fa-sm fa-map mr-1"/>
-          </Icon> */
+        { layer.toolbar.map((tool, i) =>
+            <LayerTool MapActions={ MapActions }
+              layer={ layer } tool={ tool } key={ i }/>
+          )
         }
-        <Icon onClick={ e => toggleVisibility(layer) }>
-          <span className={ `fa fa-sm ${ layer.isVisible ? "fa-eye" : "fa-eye-slash" }` }/>
-        </Icon>
       </div>
     </div>
   )
 }
+
+const DefaultToolbars = {
+  "toggle-visibility":
+    ({ MapActions, layer }) => (
+      <Icon onClick={ e => MapActions.toggleVisibility(layer) }>
+        <span className={ `fa fa-sm ${ layer.isVisible ? "fa-eye" : "fa-eye-slash" }` }/>
+      </Icon>
+    )
+};
+
+const LayerTool = ({ tool, layer, MapActions }) => {
+  const Tool = React.useMemo(() => {
+    if (tool in DefaultToolbars) {
+      return DefaultToolbars[tool];
+    }
+    return () => (
+      <Icon onClick={ tool.actionFunc }>
+        <span className={ `fa fa-sm ${ tool.icon }` }/>
+      </Icon>
+    )
+  }, [tool]);
+  return (
+    <Tool layer={ layer } MapActions={ MapActions }/>
+  )
+};
