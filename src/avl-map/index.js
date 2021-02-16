@@ -3,8 +3,11 @@ import React from "react"
 import mapboxgl from "mapbox-gl"
 
 import get from "lodash.get"
+import styled from "styled-components"
 
 import { useFalcor } from "@availabs/avl-components"
+
+import { useSetSize } from "avl-components"
 
 import Sidebar from "./components/Sidebar"
 import LoadingLayer from "./components/LoadingLayer"
@@ -12,13 +15,27 @@ import {
   HoverCompContainer,
   PinnedHoverComp
 } from "./components/HoverCompContainer"
+import InfoBoxes from "./components/InfoBoxContainer"
+import DraggableModal from "./components/DraggableModal"
+
+export const DefaultStyles = [
+  { name: "Dark",
+    style: "mapbox://styles/am3081/cjqqukuqs29222sqwaabcjy29" },
+  { name: "Light",
+    style: 'mapbox://styles/am3081/cjms1pdzt10gt2skn0c6n75te' },
+  { name: "Satellite",
+    style: 'mapbox://styles/am3081/cjya6wla3011q1ct52qjcatxg' },
+  { name: "Satellite Streets",
+    style: `mapbox://styles/am3081/cjya70364016g1cpmbetipc8u` }
+]
 
 const DefaultMapOptions = {
   center: [-74.180647, 42.58],
   minZoom: 2,
   zoom: 10,
   preserveDrawingBuffer: false,
-  style: "mapbox://styles/am3081/cjqqukuqs29222sqwaabcjy29",
+  // style: "mapbox://styles/am3081/cjqqukuqs29222sqwaabcjy29",
+  styles: DefaultStyles,
   attributionControl: false,
   logoPosition: "bottom-right"
 }
@@ -26,7 +43,21 @@ const DefaultMapOptions = {
 let idCounter = 0;
 const getUniqueId = () => `unique-id-${ ++idCounter }`;
 
-const DefaultState = {
+const DefaultStaticOptions = {
+  size: [80, 50],
+  center: [-74.180647, 42.58],
+  zoom: 2.5
+}
+const getStaticImageUrl = (style, options = {}) => {
+  const {
+    size, center, zoom
+  } = { ...DefaultStaticOptions, ...options };
+  return `https://api.mapbox.com/styles/v1/${ style.slice(16) }/static/` +
+    `${ center },${ zoom }/${ size.join("x") }` +
+    `?attribution=false&logo=false&access_token=${ mapboxgl.accessToken }`
+}
+
+const InitialState = {
   map: null,
   activeLayers: [],
   dynamicLayers: [],
@@ -36,7 +67,12 @@ const DefaultState = {
     pos: [0, 0],
     lngLat: {}
   },
-  pinnedHoverComps: []
+  pinnedHoverComps: [],
+  pinnedMapMarkers: [],
+  mapStyles: [],
+  styleIndex: 0,
+  sidebarTabIndex: 0,
+  modalData: []
 }
 const Reducer = (state, action) => {
   const { type, ...payload } = action;
@@ -45,8 +81,8 @@ const Reducer = (state, action) => {
       return {
         ...state,
         activeLayers: [
-          ...state.activeLayers,
-          payload.layerId
+          payload.layerId,
+          ...state.activeLayers
         ]
       };
     case "loading-start":
@@ -69,8 +105,8 @@ const Reducer = (state, action) => {
       return {
         ...state,
         activeLayers: [
-          ...state.activeLayers,
-          payload.layerId
+          payload.layerId,
+          ...state.activeLayers
         ]
       };
     case "deactivate-layer":
@@ -78,15 +114,7 @@ const Reducer = (state, action) => {
         ...state,
         activeLayers: state.activeLayers.filter(id => id !== payload.layerId)
       };
-    case "update-hover":
-      return {
-        ...state,
-        hoverData: {
-          ...state.hoverData,
-          ...payload.hoverData
-        }
-      };
-    case "layer-move": {
+    case "hover-layer-move": {
       const { data, layer, HoverComp, ...rest } = payload;
       state.hoverData.data.set(layer.id, { data, HoverComp, layer });
       return {
@@ -97,7 +125,7 @@ const Reducer = (state, action) => {
         }
       }
     }
-    case "layer-leave": {
+    case "hover-layer-leave": {
       const { layer } = payload;
       state.hoverData.data.delete(layer.id);
       return {
@@ -107,15 +135,27 @@ const Reducer = (state, action) => {
         }
       }
     }
+    // case "update-hover":
+    //   return {
+    //     ...state,
+    //     hoverData: {
+    //       ...state.hoverData,
+    //       ...payload.hoverData
+    //     }
+    //   };
     case "pin-hover-comp":
       if (!state.hoverData.data.size) return state;
+
       return {
         ...state,
         pinnedHoverComps: [
           ...state.pinnedHoverComps,
           { id: getUniqueId(),
             HoverComps: [...state.hoverData.data.values()],
-            ...payload
+            ...payload,
+            // marker: new mapboxgl.Marker()
+              // .setLngLat(payload.lngLat)
+              // .addTo(state.map)
           }
         ]
       };
@@ -123,7 +163,11 @@ const Reducer = (state, action) => {
       return {
         ...state,
         pinnedHoverComps: state.pinnedHoverComps
-          .filter(({ id }) => id !== payload.id)
+          .filter(phc => {
+            if (phc.id !== payload.id) return true;
+            phc.marker.remove();
+            return false;
+          })
       };
     case "add-dynamic-layer":
       return {
@@ -138,6 +182,49 @@ const Reducer = (state, action) => {
         ...state,
         dynamicLayers: state.dynamicLayers.filter(({ id }) => id !== payload.layer.id)
       }
+    case "show-modal": {
+      const { layerId, modalKey, ...modalData } = payload;
+      if (state.modalData.reduce((a, c) => (
+        a || ((c.layerId === layerId) && (c.modalKey === modalKey))
+      ), false)) return state;
+      return {
+        ...state,
+        modalData: [
+          ...state.modalData,
+          { layerId, modalKey, zIndex: 0, ...modalData }
+        ]
+      }
+    }
+    case "bring-modal-to-front": {
+      const { layerId, modalKey } = payload;
+      return {
+        ...state,
+        modalData: state.modalData.map(md => ({
+          ...md, zIndex: ((md.layerId === layerId) && (md.modalKey === modalKey)) ? 10 : 0
+        }))
+      }
+    };
+    case "update-modal-data": {
+      const { layerId, modalKey, data } = payload;
+      return {
+        ...state,
+        modalData: state.modalData.map(md => {
+          if ((md.layerId === layerId) && (md.modalKey === modalKey)) {
+            return { ...md, data };
+          }
+          return md;
+        })
+      }
+    }
+    case "close-modal":
+      return {
+        ...state,
+        modalData: state.modalData.filter(({ layerId, modalKey }) =>
+          !((layerId === payload.layerId) && (modalKey === payload.modalKey))
+        )
+      }
+    case "set-map-style":
+    case "switch-tab":
     case "map-loaded":
     case "update-state":
       return {
@@ -152,6 +239,11 @@ const Reducer = (state, action) => {
 const EmptyArray = [];
 const EmptyObject = {};
 
+const DefaultSidebar = {
+  tabs: ["layers", "styles"],
+  title: ""
+}
+
 const toolbarFuncRunner = args => {
   if (!args.length) return [];
   const [arg, ...rest] = args;
@@ -160,15 +252,15 @@ const toolbarFuncRunner = args => {
   }
   return [arg, ...toolbarFuncRunner(rest)];
 }
-const toolbarFuncArgs = ({ action }, layer, MapActions) => (
+const toolbarFuncArgs = ({ action }, layer, MapActions, map) => (
   action.map(action => {
     if (typeof action === "function") return action;
     if (typeof action === "string") {
       const [arg1, arg2] = action.split(".");
       if (arg1 === "map") {
-        return MapActions[arg2];
+        return arg2 ? MapActions[arg2] : map;
       }
-      else if (arg1 === "this") {
+      else if ((arg1 === "this") && arg2) {
         return layer[arg2].bind(layer);
       }
     }
@@ -191,21 +283,19 @@ const AvlMap = props => {
 
   const { falcor } = useFalcor();
 
-  const [state, dispatch] = React.useReducer(Reducer, DefaultState);
+  const [state, dispatch] = React.useReducer(Reducer, InitialState);
 
   const initializedLayers = React.useRef([]);
 
-  const pinHoverComp = React.useCallback(({ lngLat }) => {
-    dispatch({
-      type: "pin-hover-comp",
-      lngLat
-    });
-  }, []);
   const updateHover = React.useMemo(() => {
     return hoverData => {
       dispatch(hoverData);
     };
   }, []);
+
+  const projectLngLat = React.useCallback(lngLat => {
+    return state.map.project(lngLat);
+  }, [state.map]);
 
   const updateFilter = React.useCallback((layer, filterName, value) => {
     if (!get(layer, ["filters", filterName], null)) return;
@@ -232,131 +322,116 @@ const AvlMap = props => {
 
   }, [state.map, falcor]);
 
+  const updateLegend = React.useCallback((layer, update) => {
+    if (!get(layer, "legend", null)) return;
+
+    layer.legend = {
+      ...layer.legend,
+      ...update
+    }
+    layer.render(state.map, falcor);
+
+    dispatch({ type: "update-state" });
+  }, [state.map, falcor])
+
   const addDynamicLayer = React.useCallback(layer => {
+
     layer.isDynamic = true;
+
     dispatch({
       type: "add-dynamic-layer",
       layer
     });
   }, []);
   const removeDynamicLayer = React.useCallback(layer => {
+
     layer._onRemove(state.map);
+
     dispatch({
       type: "remove-dynamic-layer",
       layer
     });
   }, [state.map]);
   const toggleVisibility = React.useCallback(layer => {
+
     layer.toggleVisibility(state.map);
+
     dispatch({ type: "update-state" });
   }, [state.map]);
   const addLayer = React.useCallback(layer => {
+
     layer._onAdd(state.map, falcor, updateHover)
       .then(() => layer.render(state.map, falcor));
+
     dispatch({
       type: "activate-layer",
       layerId: layer.id
     });
   }, [state.map, falcor, updateHover]);
   const removeLayer = React.useCallback(layer => {
+
     layer._onRemove(state.map);
+
     dispatch({
       type: "deactivate-layer",
       layerId: layer.id
     });
   }, [state.map]);
-
-  const MapActions = React.useMemo(() => ({
-    toggleVisibility,
-    addLayer,
-    removeLayer,
-    addDynamicLayer,
-    removeDynamicLayer
-  }), [toggleVisibility, addLayer, removeLayer, addDynamicLayer, removeDynamicLayer]);
-
-// INITIALIZE LAYERS
-  React.useEffect(() => {
-    if (!state.map) return;
-
-    [...layers,
-      ...state.dynamicLayers
-    ].filter(({ id }) => !initializedLayers.current.includes(id))
-      .forEach(layer => {
-        initializedLayers.current.push(layer.id);
-
-        for (const filterName in layer.filters) {
-          layer.filters[filterName].onChange = v => updateFilter(layer, filterName, v);
-        }
-        layer.addDynamicLayer = addDynamicLayer.bind(layer);
-
-        layer.toolbar.forEach(tool => {
-          if (typeof tool === "object") {
-            tool.actionFunc = e => {
-              toolbarFuncRunner(toolbarFuncArgs(tool, layer, MapActions))
-            };
-          }
-        })
-
-        dispatch({ type: "loading-start", layerId: layer.id });
-
-        return layer._init(state.map, falcor)
-          .then(() => {
-            if (layer.setActive) {
-              return layer._onAdd(state.map, falcor, updateHover)
-                .then(() => layer.fetchData(falcor))
-                .then(() => layer.render(state.map, falcor));
-            }
-          })
-          .then(() => {
-            if (layer.setActive) {
-              dispatch({ type: "init-layer", layerId: layer.id });
-            }
-            dispatch({ type: "loading-stop", layerId: layer.id });
-            return layer;
-          });
-      });
-  }, [state.map, state.dynamicLayers, falcor, layers, addDynamicLayer, updateFilter, updateHover, MapActions]);
-
+  const setSidebarTab = React.useCallback(sidebarTabIndex => {
+    dispatch({
+      type: "switch-tab",
+      sidebarTabIndex
+    });
+  }, []);
+  const showModal = React.useCallback((layerId, modalKey, data = {}) => {
+    dispatch({
+      type: "show-modal",
+      layerId,
+      modalKey,
+      data
+    });
+  }, []);
+  const updateModalData = React.useCallback((layerId, modalKey, data = {}) => {
+    dispatch({
+      type: "update-modal-data",
+      layerId,
+      modalKey,
+      data
+    });
+  }, []);
+  const closeModal = React.useCallback((layerId, modalKey) => {
+    dispatch({
+      type: "close-modal",
+      layerId,
+      modalKey
+    });
+  }, []);
+  const bringModalToFront = React.useCallback((layerId, modalKey) => {
+    dispatch({
+      type: "bring-modal-to-front",
+      layerId,
+      modalKey
+    });
+  }, []);
+  // const updateModal = React.useCallback(({ layerI}))
   const removePinnedHoverComp = React.useCallback(id => {
     dispatch({
       type: "remove-pinned",
       id
     });
   }, []);
-
-// LOAD MAPBOX GL MAP
-  React.useEffect(() => {
-    if (!accessToken) return;
-
-    mapboxgl.accessToken = accessToken;
-
-    const {
-      style, ...Options
-    } = { ...DefaultMapOptions, ...mapOptions };
-
-    const map = new mapboxgl.Map({
-      container: id,
-      ...Options,
-      style
+  const addPinnedHoverComp = React.useCallback(({ lngLat, hoverData, id }) => {
+    const marker = new mapboxgl.Marker()
+      .setLngLat(lngLat)
+      .addTo(state.map);
+    dispatch({
+      type: "pin-hover-comp",
+      marker,
+      lngLat
     });
-
-    map.on("move", e => {
-      dispatch({ type: "update-state", mapMoved: performance.now() });
-    });
-
-    map.on("click", pinHoverComp)
-
-    map.once("load", e => {
-      dispatch({ type: "map-loaded", map });
-    });
-
-    return () => map.remove();
-  }, [accessToken, id, mapOptions, pinHoverComp]);
-
-  const projectLngLat = React.useCallback(lngLat => {
-    return state.map.project(lngLat);
   }, [state.map]);
 
+// DETERMINE ACTIVE AND INACTIVE LAYERS
   const [activeLayers, inactiveLayers] = React.useMemo(() => {
     const result = [
       ...layers,
@@ -364,11 +439,6 @@ const AvlMap = props => {
     ].filter(({ id }) => initializedLayers.current.includes(id))
       .reduce((a, c) => {
         if (state.activeLayers.includes(c.id)) {
-          c.MapActions = MapActions;
-          const props = get(layerProps, c.id);
-          if (props) {
-            c.receiveProps(props);
-          }
           a[0].push(c);
         }
         else {
@@ -382,7 +452,160 @@ const AvlMap = props => {
     }, {});
     result[0].sort((a, b) => sortOrder[a.id] - sortOrder[b.id]);
     return result;
-  }, [layers, state.dynamicLayers, state.activeLayers, layerProps, MapActions]);
+  }, [layers, state.dynamicLayers, state.activeLayers]);
+
+// SEND PROPS TO ACTIVE LAYERS
+  React.useEffect(() => {
+    activeLayers.forEach(layer => {
+      const props = get(layerProps, layer.id);
+      if (props) {
+        layer.receiveProps(props, state.map, falcor);
+      }
+    });
+  }, [state.map, falcor, activeLayers, layerProps]);
+
+  const setMapStyle = React.useCallback(styleIndex => {
+    state.map.once('style.load', e => {
+      activeLayers.slice().reverse().reduce((promise, layer) => {
+        return promise.then(() => layer._onAdd(state.map, falcor, updateHover))
+          .then(() => layer.render(state.map, falcor))
+      }, Promise.resolve());
+    });
+    activeLayers.forEach(layer => {
+      layer._onRemove(state.map);
+    });
+    state.map.setStyle(state.mapStyles[styleIndex].style);
+    dispatch({
+      type: "set-map-style",
+      styleIndex
+    });
+  }, [state.map, state.mapStyles, activeLayers, updateHover, falcor]);
+
+// INITIALIZE LAYERS
+  React.useEffect(() => {
+    if (!state.map) return;
+
+    [...layers,
+      ...state.dynamicLayers
+    ].filter(({ id }) => !initializedLayers.current.includes(id)).reverse()
+      .reduce((promise, layer) => {
+        initializedLayers.current.push(layer.id);
+
+        for (const filterName in layer.filters) {
+          layer.filters[filterName].onChange = v => updateFilter(layer, filterName, v);
+        }
+
+        layer.toolbar.forEach(tool => {
+          if (typeof tool === "object") {
+            tool.actionFunc = (layer, MapActions) => {
+              toolbarFuncRunner(toolbarFuncArgs(tool, layer, MapActions, state.map))
+            };
+          }
+        })
+
+        dispatch({ type: "loading-start", layerId: layer.id });
+
+        return promise.then(() => layer._init(state.map, falcor))
+          .then(() => {
+            if (layer.setActive) {
+              return layer.fetchData(falcor)
+                .then(() => layer._onAdd(state.map, falcor, updateHover))
+                .then(() => layer.render(state.map, falcor))
+                .then(() => dispatch({ type: "init-layer", layerId: layer.id }));
+            }
+          })
+          .then(() => {
+            dispatch({ type: "loading-stop", layerId: layer.id });
+          });
+      }, Promise.resolve());
+  }, [state.map, state.dynamicLayers, falcor, layers, updateFilter, updateHover]);
+
+// LOAD MAPBOX GL MAP
+  React.useEffect(() => {
+    if (!accessToken) return;
+
+    mapboxgl.accessToken = accessToken;
+
+    const regex = /^mapbox:\/\/styles\//;
+
+    const {
+      style, styles, ...Options
+    } = { ...DefaultMapOptions, ...mapOptions };
+
+    const mapStyles = styles.map(style => ({
+      ...style, imageUrl: getStaticImageUrl(style.style, { center: Options.center })
+    }));
+
+    if (regex.test(style)) {
+      if (!styles.reduce((a, c) => a || c.style === style, false)) {
+        mapStyles.unshift({
+          name: "Unspecified Style",
+          style,
+          imageUrl: getStaticImageUrl(style, Options)
+        })
+      }
+    }
+
+    const map = new mapboxgl.Map({
+      container: id,
+      ...Options,
+      style: mapStyles[0].style
+    });
+
+    // const pinHoverComp = ({ lngLat }) => {
+    //   // const marker = new mapboxgl.Marker()
+    //   //   .setLngLat(lngLat)
+    //   //   .addTo(map);
+    //   dispatch({
+    //     type: "pin-hover-comp",
+    //     // marker,
+    //     lngLat
+    //   });
+    // }
+    // map.on("click", pinHoverComp);
+
+    map.on("move", e => {
+      dispatch({ type: "update-state", mapMoved: performance.now() });
+    });
+
+    map.once("load", e => {
+      dispatch({ type: "map-loaded", map, mapStyles });
+    });
+
+    return () => map.remove();
+
+  }, [accessToken, id, mapOptions]);
+
+  // React.useEffect(() => {
+  //   state.pinnedHoverComps.forEach(({ marker, lngLat }) => {
+  //     if (!marker.getLngLat()) {
+  //       marker.setLngLat(lngLat)
+  //         .addTo(state.map);
+  //     }
+  //   })
+  // }, [state.map, state.pinnedHoverComps]);
+
+  const pinHoverComp = React.useCallback(({ lngLat }) => {
+    const marker = new mapboxgl.Marker()
+      .setLngLat(lngLat)
+      .addTo(state.map);
+    dispatch({
+      type: "pin-hover-comp",
+      marker,
+      lngLat
+    });
+  }, [state.map]);
+
+  const hovering = Boolean(state.hoverData.data.size);
+
+// APPLY CLICK LISTENER TO MAP TO ALLOW PINNED HOVER COMPS
+  React.useEffect(() => {
+    if (!hovering) return;
+
+    state.map.on("click", pinHoverComp);
+
+    return () => state.map.off("click", pinHoverComp);
+  }, [state.map, pinHoverComp, hovering]);
 
   const loadingLayers = React.useMemo(() => {
     return [
@@ -391,89 +614,141 @@ const AvlMap = props => {
     ].filter(layer => Boolean(state.layersLoading[layer.id]));
   }, [layers, state.dynamicLayers, state.layersLoading]);
 
-  const ref = React.useRef(null);
-
   const { HoverComps, ...hoverData } = React.useMemo(() => {
     const HoverComps = [...state.hoverData.data.values()];
     return { ...state.hoverData, show: Boolean(HoverComps.length), HoverComps };
   }, [state.hoverData]);
 
-  const size = useSetSize(ref);
+  const Modals = React.useMemo(() => {
+    return state.modalData.reduce((a, md) => {
+      const { modal, layer } = activeLayers
+        .reduce((a, c) => {
+          return c.id === md.layerId ?
+            { modal: get(c, ["modals", md.modalKey]), layer: c } : a; }, {});
+      if (modal) {
+        a.push({ ...modal, modalData: md, layer });
+      }
+      return a;
+    }, []);
+  }, [activeLayers, state.modalData]);
 
-  const [open, setOpen] = React.useState(true);
-  const toggleOpen = React.useCallback(e => {
-    setOpen(!open);
-  }, [open]);
+  const ref = React.useRef(null),
+    size = useSetSize(ref);
+
+  const MapActions = {
+    mapState: state,
+    toggleVisibility,
+    addLayer,
+    removeLayer,
+    addDynamicLayer,
+    removeDynamicLayer,
+    updateLegend,
+    setSidebarTab,
+    setMapStyle,
+    showModal,
+    closeModal,
+    updateFilter,
+    removePinnedHoverComp,
+    addPinnedHoverComp,
+    bringModalToFront,
+    updateModalData
+  };
 
   return (
-    <div className="flex-grow relative flex">
-      <div id={ id } className="flex-grow" ref={ ref }/>
+    <MapContainer ref={ ref } className="flex-grow relative flex focus:outline-none">
 
-      <Sidebar { ...sidebar } stateMap={ state.map }
+      <div id={ id } className="flex-grow"/>
+
+      <Sidebar { ...DefaultSidebar } { ...sidebar }
+        sidebarTabIndex={ state.sidebarTabIndex }
+        mapStyles={ state.mapStyles }
+        styleIndex={ state.styleIndex }
         layersLoading={ state.layersLoading }
         inactiveLayers={ inactiveLayers }
         activeLayers={ activeLayers }
-        MapActions={ MapActions }
-        toggleOpen={ toggleOpen }
-        open={ open }>
+        loadingLayers={ loadingLayers }
+        MapActions={ MapActions }>
 
         <div className="absolute bottom-0">
-          { loadingLayers.map(layer =>
+          { loadingLayers.map(layer => (
               <LoadingLayer key={ layer.id } layer={ layer }/>
-            )
+            ))
           }
         </div>
 
       </Sidebar>
 
+      <InfoBoxes activeLayers={ activeLayers }
+        layersLoading={ state.layersLoading }
+        loadingLayers={ loadingLayers }
+        inactiveLayers={ inactiveLayers }
+        MapActions={ MapActions }/>
+
       <HoverCompContainer { ...hoverData } { ...size }>
-        { HoverComps.map(({ HoverComp, data, layer }) =>
-            <HoverComp key={ layer.id } layer={ layer } data={ data }/>
-          )
+        { HoverComps.map(({ HoverComp, data, layer }, i) => (
+            <div key={ layer.id }
+              className={ `${ i > 0 ? "mt-1" : "" } relative` }>
+              <HoverComp layer={ layer } data={ data }
+                activeLayers={ activeLayers }
+                layersLoading={ state.layersLoading }
+                loadingLayers={ loadingLayers }
+                inactiveLayers={ inactiveLayers }
+                MapActions={ MapActions }/>
+            </div>
+          ))
         }
       </HoverCompContainer>
 
       <div className={ `
-        absolute top-0 bottom-0 left-0 right-0
+        absolute top-0 bottom-0 left-0 right-0 z-50
         pointer-events-none overflow-hidden flex-grow
       ` }>
+
+        { Modals.map(({ modalData, ...data }) => (
+            <DraggableModal key={ `${ modalData.layerId }-${ modalData.modalKey }` }
+              { ...data } bounds={ size }
+              modalData={ modalData }
+              MapActions={ MapActions }
+              activeLayers={ activeLayers }
+              layersLoading={ state.layersLoading }
+              loadingLayers={ loadingLayers }
+              inactiveLayers={ inactiveLayers }/>
+          ))
+        }
+
         { state.pinnedHoverComps.map(({ HoverComps, data, id, ...hoverData }) => (
             <PinnedHoverComp { ...hoverData } { ...size }
               remove={ removePinnedHoverComp }
               project={ projectLngLat }
               key={ id } id={ id }>
-              { HoverComps.map(({ HoverComp, data, layer }) =>
-                  <HoverComp key={ layer.id } layer={ layer } data={ data }/>
+              { HoverComps.map(({ HoverComp, data, layer }, i) =>
+                  <div key={ layer.id }
+                    className={ `${ i > 0 ? "mt-1" : "" } relative` }>
+                    <HoverComp key={ layer.id } layer={ layer } data={ data }
+                      activeLayers={ activeLayers }
+                      layersLoading={ state.layersLoading }
+                      loadingLayers={ loadingLayers }
+                      inactiveLayers={ inactiveLayers }
+                      MapActions={ MapActions }/>
+                  </div>
                 )
               }
             </PinnedHoverComp>
           ))
         }
-      </div>
-
-      <div className="absolute bottom-0 top-0"
-        style={ { left: "320px" } }>
 
       </div>
-    </div>
+
+    </MapContainer>
   )
 }
 export default AvlMap;
 
-const getRect = ref => {
-  const node = ref.hasOwnProperty("current") ? ref.current : ref;
-  if (!node) return { width: 0, height: 0 };
-  return node.getBoundingClientRect();
-}
-
-export const useSetSize = ref => {
-  const [size, setSize] = React.useState({ width: 0, height: 0 });
-
-  const { width, height } = getRect(ref);
-
-  React.useLayoutEffect(() => {
-    setSize({ width, height });
-  }, [width, height]);
-
-  return size;
-}
+const MapContainer = styled.div`
+  .mapboxgl-map canvas {
+    display: block;
+  }
+  .mapboxgl-map canvas:focus {
+    outline: none;
+  }
+`

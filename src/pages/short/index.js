@@ -4,6 +4,8 @@ import shortWrapper from "./wrappers/short"
 import ShortStation from "./ShortStation"
 import shortStation from "./wrappers/shortStation"
 
+import ShortUploader from "./ShortUploader"
+
 const Station = {
   path: "/short/station/:stationId",
   // mainNav: true,
@@ -49,7 +51,32 @@ const Short = {
     ]
   }
 }
+
+const Uploader = {
+  path: "/short-uploader",
+  mainNav: true,
+  name: "Short Uploader",
+  exact: true,
+  authLevel: 0,
+  layoutSettings: {
+    fixed: true,
+    navBar: 'side',
+    headerBar: {
+      title: "Short Uploader"
+    }
+  },
+  component: {
+    type: ShortUploader,
+    wrappers: [
+      "show-loading",
+      // shortWrapper,
+      "avl-falcor",
+      "with-auth"
+    ]
+  }
+}
 const routes = [
+  Uploader,
   Station,
   Short
 ];

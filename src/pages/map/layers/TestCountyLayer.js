@@ -3,9 +3,12 @@ import get from "lodash.get"
 
 import { rollups } from "d3"
 
+import { getColorRange } from "avl-components"
+
 import LayerContainer from "avl-map/LayerContainer"
 
 import { TestDynamicLayerFactory } from "./TestDynamicLayer"
+import { TestModal1, TestModal2 } from "./TestModal"
 
 class TestCountyLayer extends LayerContainer {
   name = "Counties"
@@ -35,6 +38,67 @@ class TestCountyLayer extends LayerContainer {
         return a;
       }, []);
       return data;
+    }
+  }
+  legend = {
+    // types: ["quantile", "linear", "quantize", "ordinal"],
+    // type: "linear",
+    // domain: [0, 50, 100],
+    // range: getColorRange(3, "BrBG", true),
+
+    // type: "ordinal",
+    // domain: ["One", "Two", "Three", "Four", "Five"],
+    // range: getColorRange(5, "Set3", true),
+    // height: 2,
+    // width: 320,
+    // direction: "horizontal",
+
+    // type: "quantize",
+    // domain: [0, 15000],
+    // range: getColorRange(5, "BrBG", true),
+    // format: ",d",
+
+    type: "quantile",
+    domain: [0, 12, 23, 34, 45, 45, 56, 67, 89, 93, 106, 116, 125, 134, 147, 150],
+    range: getColorRange(5, "BrBG", true),
+    format: ",.1f",
+
+    show: true,
+    title: "Legend Test"
+  }
+  infoBoxes = [
+    { Header: "Counties Info Box",
+      Component: props => {
+        return (
+          <div>
+            TEST INFO BOX WITH A HEADER<br />
+            TEST INFO BOX WITH A HEADER<br />
+            TEST INFO BOX WITH A HEADER<br />
+            TEST INFO BOX WITH A HEADER<br />
+            TEST INFO BOX WITH A HEADER
+          </div>
+        )
+      }
+    },
+    { Component: props => (
+        <div>
+          TEST INFO BOX WITHOUT A HEADER<br />
+          TEST INFO BOX WITHOUT A HEADER<br />
+          TEST INFO BOX WITHOUT A HEADER<br />
+          TEST INFO BOX WITHOUT A HEADER<br />
+          TEST INFO BOX WITHOUT A HEADER
+        </div>
+      )
+    }
+  ]
+  modals = {
+    test1: {
+      Component: TestModal1,
+      Header: "Test Modal 1"
+    },
+    test2: {
+      Component: TestModal2,
+      Header: "Test Modal 2"
     }
   }
   sources = [
@@ -70,31 +134,37 @@ class TestCountyLayer extends LayerContainer {
   ]
   toolbar = [
     "toggle-visibility",
-    { tooltip: "Add Dynamic Layer",
+    { tooltip: "Add Dynamic Layer 1",
       icon: "fa-thumbs-up",
       action: ["map.addDynamicLayer", "this.createDynamicLayer"]
     },
-    { tooltip: "Add Dynamic Layer",
-      icon: "fa-thumbs-up",
+    { tooltip: "Add Dynamic Layer 2",
+      icon: "fa-surprise",
       action: ["map.addDynamicLayer", TestDynamicLayerFactory]
     },
-    { tooltip: "Does Something",
+    { tooltip: "Open Modal 1",
       icon: "fa-cog",
-      action: ["this.doSomething"]
+      action: ["map.showModal", this.id, "test1", { test: "props" }]
+    },
+    { tooltip: "Open Modal 2",
+      icon: "fa-tools",
+      action: ["map.showModal", this.id, "test2"]
     }
   ]
 
   init(map, falcor) {
-    return falcor.get(["geo", "36", "counties",])
+    return falcor.get(["geo", "36", "counties"])
       .then(res => {
         const counties = get(res, ["json", "geo", "36", "counties"])
-        return falcor.get(["geo", counties, "name"])
-          .then(res => {
-            this.filters.counties.domain = counties.map(geoid => {
-              const name = get(res, ["json", "geo", geoid, "name"]);
-              return { geoid, name };
-            }).sort((a, b) => a.name.localeCompare(b.name));
-          });
+        return falcor.get(
+          ["geo", counties, "name"]
+        )
+        .then(res => {
+          this.filters.counties.domain = counties.map(geoid => {
+            const name = get(res, ["json", "geo", geoid, "name"]);
+            return { geoid, name };
+          }).sort((a, b) => a.name.localeCompare(b.name));
+        });
       });
   }
   fetchData() {
@@ -108,12 +178,22 @@ class TestCountyLayer extends LayerContainer {
     else {
       map.setFilter("Counties", false);
     }
+    const colors = counties.reduce((a, c, i) => ({
+      ...a, [c]: this.legend.range[i % this.legend.range.length]
+    }), {});
+    map.setPaintProperty("Counties", "fill-color", [
+      "case",
+      ["boolean", ["feature-state", "hover"], false],
+      "#090",
+      ["get", ["get", "geoid"], ["literal", colors]]
+    ])
   }
   createDynamicLayer() {
+console.log("THIS:", this)
     return TestDynamicLayerFactory();
   }
-  doSomething() {
-    window.alert(`${ this.name } did something.`);
+  doSomething(map) {
+    window.alert(`Layer ${ this.name } did something!!!`);
   }
 }
 

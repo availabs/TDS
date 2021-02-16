@@ -8,7 +8,7 @@ import LayerContainer from "avl-map/LayerContainer"
 
 const HoverComp = ({ data, layer }) => {
   return (
-    <div className="px-2">
+    <div className="p-1">
       <div className="border-2 rounded px-2">
         <div className="text-center">
           I'm a custom hover component!!!
@@ -67,6 +67,19 @@ class TestCousubLayer extends LayerContainer {
     },
     HoverComp
   }
+  infoBoxes = [
+    { Header: "Cousubs Info Box",
+      Component: props => (
+        <div>
+          TEST INFO BOX WITH A HEADER<br />
+          TEST INFO BOX WITH A HEADER<br />
+          TEST INFO BOX WITH A HEADER<br />
+          TEST INFO BOX WITH A HEADER<br />
+          TEST INFO BOX WITH A HEADER
+        </div>
+      )
+    }
+  ]
   sources = [
     { id: "cousubs",
       source: {
@@ -102,10 +115,14 @@ class TestCousubLayer extends LayerContainer {
     return falcor.get(["geo", "36", "cousubs"])
       .then(res => {
         const cousubs = get(res, ["json", "geo", "36", "cousubs"]);
-        return falcor.get(["geo", cousubs, "name"])
+        return falcor.chunk(
+            ["geo", cousubs, "name"],
+            { onProgress: (curr, total) => { console.log("progress:", curr / total); } }
+          )
           .then(res => {
+            const cache = falcor.getCache();
             this.filters.cousubs.domain = cousubs.map(geoid => {
-              const name = get(res, ["json", "geo", geoid, "name"]);
+              const name = get(cache, ["geo", geoid, "name"]);
               return { geoid, name };
             }).sort((a, b) => a.name.localeCompare(b.name));
           })

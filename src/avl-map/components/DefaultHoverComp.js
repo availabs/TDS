@@ -2,7 +2,7 @@ import React from "react"
 
 const DefaultHoverComp = ({ data, layer }) => {
   return (
-    <div className="px-2">
+    <div className="px-1">
       { data.map((row, i) =>
           <div key={ i } className="flex">
             { row.map((d, ii) =>

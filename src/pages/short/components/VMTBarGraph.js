@@ -4,7 +4,9 @@ import { format as d3format } from "d3"
 
 import { useTheme } from "@availabs/avl-components"
 
-import { BarGraph, getColorRange } from "avl-graph/src"
+import { getColorRange } from "avl-components"
+
+import { BarGraph } from "avl-graph/src"
 
 const colors1 = getColorRange(7, "Set3"),
   colors2 = getColorRange(7, "Set1")

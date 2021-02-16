@@ -9,7 +9,7 @@ import { MAPBOX_TOKEN } from "config.private"
 import { TestCountyLayerFactory } from "./layers/TestCountyLayer"
 import { TestCousubLayerFactory } from "./layers/TestCousubLayer"
 
-const Map = ({ mapOptions, layers, falcor, falcorCache }) => {
+const Map = ({ mapOptions, layers, falcor }) => {
 
   React.useEffect(() => {
     falcor.get(["geo", "36", ["counties", "cousubs"]])
@@ -23,12 +23,26 @@ const Map = ({ mapOptions, layers, falcor, falcorCache }) => {
 
   return (
     <AvlMap accessToken={ MAPBOX_TOKEN }
+      mapOptions={ mapOptions }
+      layers={ layers }
       sidebar={ {
         title: "Map Test",
-        layers: ["layers", "styles"]
-      } }
-      mapOptions={ mapOptions }
-      layers={ layers }/>
+        tabs: ["layers", "styles",
+          { icon: "fa-cog",
+            Component: CustomTab
+          }
+        ]
+      } }/>
+  )
+}
+
+const CustomTab = props => {
+  return (
+    <div className={ `bg-blueGray-800 p-1 rounded` }>
+      <div className={ `bg-blueGray-700 p-1 rounded` }>
+        SOME STUFF HERE!!!!
+      </div>
+    </div>
   )
 }
 
@@ -50,8 +64,8 @@ const MapPage = {
         zoom: 9
       },
       layers: [
-        TestCountyLayerFactory(),
-        TestCousubLayerFactory()
+        TestCousubLayerFactory(),
+        TestCountyLayerFactory()
       ]
     },
     wrappers: [

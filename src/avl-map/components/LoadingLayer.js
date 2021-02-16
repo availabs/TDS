@@ -1,10 +1,13 @@
 import React from "react"
 
-import { ScalableLoading } from "@availabs/avl-components"
+import { ScalableLoading, useTheme } from "@availabs/avl-components"
 
 const LoadingLayer = ({ layer, progress }) => {
+
+  const theme = useTheme();
+
   return (
-    <div className="bg-blueGray-900 flex rounded-tl rounded-bl items-center"
+    <div className={ `${ theme.sidebarBg } flex rounded-tl rounded-bl items-center` }
       style={ {
         width: "300px",
         borderTopRightRadius: "25px",

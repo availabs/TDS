@@ -18,33 +18,29 @@ const DefaultOptions = {
   sources: [],
   layers: [],
   isVisible: true,
-  toolbar: ["toggle-visibility"]
+  toolbar: ["toggle-visibility"],
+  legend: null,
+  infoBoxes: []
 }
 
 class LayerContainer {
   constructor(options = {}) {
 
-    this.id = getLayerId();
-
     const Options = { ...DefaultOptions, ...options };
     for (const key in Options) {
       this[key] = Options[key];
     }
+
+    this.id = getLayerId();
+
     this.layerVisibility = {};
 
     this.needsRender = this.setActive;
 
     this.callbacks = [];
     this.hoveredFeatures = new Map();
-
-    // this.toggleVisibility = this.toggleVisibility.bind(this);
   }
   _init(map, falcor) {
-    this.sources.forEach(({ id, source }) => {
-      if (!map.getSource(id)) {
-        map.addSource(id, source);
-      }
-    });
     return this.init(map, falcor);
   }
   init(map, falcor) {
@@ -56,6 +52,11 @@ class LayerContainer {
   }
 
   _onAdd(map, falcor, updateHover) {
+    this.sources.forEach(({ id, source }) => {
+      if (!map.getSource(id)) {
+        map.addSource(id, source);
+      }
+    });
     this.layers.forEach(layer => {
       if (!map.getLayer(layer.id)) {
         map.addLayer(layer);
@@ -135,7 +136,7 @@ class LayerContainer {
       if (hasValue(data)) {
         updateHover({
           pos: [point.x, point.y],
-          type: "layer-move",
+          type: "hover-layer-move",
           HoverComp,
           layer: this,
           lngLat,
@@ -147,7 +148,7 @@ class LayerContainer {
     const mouseleave = (layerId, e) => {
       this.hoverLeave(map, layerId);
       updateHover({
-        type: "layer-leave",
+        type: "hover-layer-leave",
         layer: this
       });
     };
@@ -185,14 +186,14 @@ class LayerContainer {
 
   }
 
-  fetchData() {
+  fetchData(falcor) {
     return Promise.resolve();
   }
   render(map, falcor) {
 
   }
 
-  receiveProps(props) {
+  receiveProps(props, map, falcor) {
 
   }
 
