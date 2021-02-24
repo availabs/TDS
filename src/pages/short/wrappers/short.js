@@ -4,28 +4,19 @@ import { useParams } from "react-router-dom"
 
 import get from "lodash.get"
 
+import { useAsyncSafe } from "avl-components"
+
 export const REGIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 export const CLASSES = [
-    1, 2, 4, 6, 7, 8, 9,
+     1,  2,  4,  6,  7,  8,  9,
     11, 12, 14, 16, 17, 18, 19
   ];
 
 export const YEARS = [2019, 2018, 2017, 2016];
 
-export const useAsyncSafe = func => {
-  const MOUNTED = React.useRef(false);
-  React.useEffect(() => {
-    MOUNTED.current = true;
-    return () => { MOUNTED.current = false; };
-  }, []);
-  return React.useMemo(() =>
-    (...args) => { MOUNTED.current && func(...args); },
-    [func]
-  );
-}
-
 const shortWrapper = Component =>
   ({ falcor, falcorCache, ...props }) => {
+
     const [region, setRegion] = React.useState(1),
       [year, setYear] = React.useState(YEARS[0]),
       [loading, _setLoading] = React.useState(false),
@@ -50,12 +41,12 @@ const shortWrapper = Component =>
       falcor.get([
         "ris", "byRegion", region, YEARS, "byClass", CLASSES,
         ['functional_class', 'aadt', 'length', 'vmt']
-      ]).then(() => falcor.get(["hds", "short", "stations", "aggregate", region, year, "length"]))
+      ]).then(() => falcor.get(["ris", "short", "stations", "aggregate", region, year, "length"]))
         .then(res => {
-          const length = +get(res, ["json", "hds", "short", "stations", "aggregate", region, year, "length"], 0);
+          const length = +get(res, ["json", "ris", "short", "stations", "aggregate", region, year, "length"], 0);
           if (length) {
             return falcor.get(
-              ["hds", "short", "stations", "aggregate", region, year, "byIndex",
+              ["ris", "short", "stations", "aggregate", region, year, "byIndex",
                 { from: 0, to: length - 1 }, "array"
               ]
             )
@@ -65,12 +56,12 @@ const shortWrapper = Component =>
     }, [falcor, region, setLoading, year]);
 
     const stations = React.useMemo(() => {
-      const length = +get(falcorCache, ["hds", "short", "stations", "aggregate", region, year, "length"], 0);
+      const length = +get(falcorCache, ["ris", "short", "stations", "aggregate", region, year, "length"], 0);
 
       const stations = [];
 
       for (let i = 0; i < length; ++i) {
-        const ref = get(falcorCache, ["hds", "short", "stations", "aggregate", region, year, "byIndex", i, "value"]),
+        const ref = get(falcorCache, ["ris", "short", "stations", "aggregate", region, year, "byIndex", i, "value"]),
           data = get(falcorCache, ref);
         if (data) {
           stations.push(...get(data, ["array", "value"], []));

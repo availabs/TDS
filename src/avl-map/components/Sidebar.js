@@ -39,9 +39,9 @@ const Sidebar = ({ open, sidebarTabIndex, MapActions, tabs, title, children, ...
                 <div className={ `
                     w-10 h-9 hover:${ theme.bg } rounded-t-lg transition
                     ${ i === sidebarTabIndex ?
-                      `${ theme.bg } ${ theme.textInfo }` :
+                      `${ theme.bg } ${ theme.menuTextActive }` :
                       `${ theme.menuBg} cursor-pointer`
-                    } hover:${ theme.textInfo }
+                    } hover:${ theme.menuTextActive }
                     flex items-center justify-center
                   ` }>
                   <span className={ `fa fa-lg ${ icon }` }/>
@@ -120,7 +120,7 @@ const StylesTab = ({ mapStyles, styleIndex, MapActions }) => {
 
         { mapStyles.map(({ name, imageUrl }, i) =>
             <div key={ i } className={ `
-              ${ i === 0 ? "" : "mt-1" } p-1 rounded hover:${ theme.textInfo }
+              ${ i === 0 ? "" : "mt-1" } p-1 rounded hover:${ theme.menuTextActive }
               flex items-center hover:${ theme.accent2 } transition
               ${ i === styleIndex ?
                 `border-r-4 ${ theme.borderInfo } ${ theme.accent2 }` :

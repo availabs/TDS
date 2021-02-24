@@ -22,6 +22,7 @@ const DraggableModal = ({ Header,
   return (
     <Draggable { ...props } className="pointer-events-auto"
       onClick={ e => MapActions.bringModalToFront(layerId, modalKey) }
+      onDragStart={ e => MapActions.bringModalToFront(layerId, modalKey) }
       style={ { zIndex } }
       toolbar={ [
         { icon: "fa-times",

@@ -27,7 +27,7 @@ const Short = ({ loading,
   }, [0, 0]);
 
   return (
-    <div className="mx-10 my-8 grid grid-cols-2 gap-y-6">
+    <div className="m-10 grid grid-cols-2 gap-y-6">
       <div className="text-5xl font-bold col-span-1">
         { loading ? "(Loading) " : null }{ Region.name } ({ year })
       </div>

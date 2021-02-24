@@ -51,7 +51,7 @@ const MapPage = {
   mainNav: true,
   name: "Map Test",
   exact: true,
-  authLevel: 0,
+  // authLevel: 0,
   layoutSettings: {
     fixed: true,
     navBar: 'top',

@@ -5,8 +5,7 @@ const RowLengths = {
   "41": "Short Class"
 }
 
-const processedFiles = [],
-  erroredFileNames = [];
+let processedFiles = [];
 
 let fileStack = [];
 
@@ -14,18 +13,18 @@ onmessage = async msg => {
 
 console.log("WORKER RECEIVED:", msg);
 
-  const { type, files, token } = msg.data;
+  const { type, files, token, file } = msg.data;
 
   switch (type) {
     case "process-files":
       fileStack.push(...files.map(file => ({ file, type: "process-file" })));
       break;
     case "remove-file": {
-      fileStack = fileStack.filter(({ name }) => name !== file.name);
+      processedFiles = processedFiles.filter(({ name }) => name !== file.name);
       break;
     }
     case "remove-all-files":
-      fileStack = [];
+      processedFiles = [];
       break;
     case "upload-files":
       fileStack.push(...files.map(file => ({ file, token, type: "upload-file" })));
@@ -47,8 +46,11 @@ console.log("WORKER RECEIVED:", msg);
         if (index !== -1) {
           result = await uploadFile(processedFiles.splice(index, 1).pop(), token);
         }
-        break;
-      }
+        break
+      };
+      case "remove-file":
+      case "remove-all-files":
+
     }
     postMessage(result);
   }
@@ -69,7 +71,13 @@ const uploadFile = (file, token) => {
       //   stationId: file.stationId
       // }]),
       // body: data,
-      body: file.rawData,
+      body: file.data
+        .map(row =>
+          row.map(r => {
+            r = r.replace(/["]/g, "'");
+            return /[,]/.test(r) ? `"${ r }"` : r;
+          }).join(`,`)
+        ).join("\n"),
       headers: {
         "Content-Type": "text/plain",
         "Authorization": token
@@ -77,12 +85,14 @@ const uploadFile = (file, token) => {
     })
     .then(res => res.json())
     .then(res => {
+      const { result, msg, ...rest } = res;
 console.log("UPLOAD RES:", res);
       return {
-        msg: `File ${ file.name } has been successfully uploaded.`,
+        msg,
         result: {
-          type: "upload-success",
-          ["upload-success"]: [file.name]
+          type: result,
+          [result]: [file.name],
+          ...rest
         }
       };
     });
@@ -90,10 +100,10 @@ console.log("UPLOAD RES:", res);
 
 const handleDroppedFile = async droppedFile => {
   if (processedFiles.find(f => f.name === droppedFile.name)) {
-    return { msg: `File ${ droppedFile.name } has already been successfully processed.`};
-  }
-  if (erroredFileNames.find(fn => fn === droppedFile.name)) {
-    return { msg: `File ${ droppedFile.name } has already been unsuccessfully processed.`};
+    return {
+      msg: `File ${ droppedFile.name } has already been successfully processed.`,
+      result: { type: "already-dropped" }
+    };
   }
   if (/^(?:application|image|audio|video|model)/.test(droppedFile.type)) {
     return {
@@ -137,8 +147,6 @@ const PromiseReader = file => {
       const rawData = loaded.target.result,
         data = rawData.trim().split(/[\n]+/)
           .map(row => row.trim().split(/[,]/).map(r => r.trim()));
-
-console.log("DATA:", data);
 
       let len = data[0].length;
 

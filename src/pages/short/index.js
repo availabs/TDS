@@ -6,12 +6,15 @@ import shortStation from "./wrappers/shortStation"
 
 import ShortUploader from "./ShortUploader"
 
+import UploadedShorts from "./UploadedShorts"
+import shortUploaded from "./wrappers/shortUploaded"
+
 const Station = {
   path: "/short/station/:stationId",
   // mainNav: true,
   name: "Short Counts",
   exact: true,
-  authLevel: 0,
+  // authLevel: 0,
   layoutSettings: {
     fixed: true,
     navBar: 'side',
@@ -30,11 +33,11 @@ const Station = {
 }
 
 const Short = {
-  path: ["/short", "/short/:region"],
+  path: ["/short", "/short/region/:region"],
   mainNav: true,
   name: "Short Counts",
   exact: true,
-  authLevel: 0,
+  // authLevel: 0,
   layoutSettings: {
     fixed: true,
     navBar: 'side',
@@ -52,12 +55,36 @@ const Short = {
   }
 }
 
+const Uploaded = {
+  path: "/short/uploaded",
+  mainNav: true,
+  name: "Uploaded Shorts",
+  exact: true,
+  // authLevel: 0,
+  layoutSettings: {
+    fixed: true,
+    navBar: 'side',
+    headerBar: {
+      title: "Uploaded Shorts"
+    }
+  },
+  component: {
+    type: UploadedShorts,
+    wrappers: [
+      "show-loading",
+      shortUploaded,
+      "avl-falcor",
+      "with-auth"
+    ]
+  }
+}
+
 const Uploader = {
-  path: "/short-uploader",
+  path: "/short/uploader",
   mainNav: true,
   name: "Short Uploader",
   exact: true,
-  authLevel: 0,
+  // authLevel: 0,
   layoutSettings: {
     fixed: true,
     navBar: 'side',
@@ -75,8 +102,10 @@ const Uploader = {
     ]
   }
 }
+
 const routes = [
   Uploader,
+  Uploaded,
   Station,
   Short
 ];

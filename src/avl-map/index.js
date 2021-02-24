@@ -17,6 +17,7 @@ import {
 } from "./components/HoverCompContainer"
 import InfoBoxes from "./components/InfoBoxContainer"
 import DraggableModal from "./components/DraggableModal"
+import MapAction from "./components/MapAction"
 
 export const DefaultStyles = [
   { name: "Dark",
@@ -117,6 +118,7 @@ const Reducer = (state, action) => {
     case "hover-layer-move": {
       const { data, layer, HoverComp, ...rest } = payload;
       state.hoverData.data.set(layer.id, { data, HoverComp, layer });
+  console.log(rest)
       return {
         ...state,
         hoverData: {
@@ -244,29 +246,30 @@ const DefaultSidebar = {
   title: ""
 }
 
-const toolbarFuncRunner = args => {
-  if (!args.length) return [];
-  const [arg, ...rest] = args;
-  if (typeof arg === "function") {
-    return [arg(...toolbarFuncRunner(rest))];
-  }
-  return [arg, ...toolbarFuncRunner(rest)];
-}
-const toolbarFuncArgs = ({ action }, layer, MapActions, map) => (
-  action.map(action => {
-    if (typeof action === "function") return action;
-    if (typeof action === "string") {
-      const [arg1, arg2] = action.split(".");
-      if (arg1 === "map") {
-        return arg2 ? MapActions[arg2] : map;
-      }
-      else if ((arg1 === "this") && arg2) {
-        return layer[arg2].bind(layer);
-      }
-    }
-    return action;
-  })
-)
+// const toolbarFuncRunner = args => {
+//   if (!args.length) return [];
+//   const [arg, ...rest] = args;
+//   if (typeof arg === "function") {
+//     return [arg(...toolbarFuncRunner(rest))];
+//   }
+//   return [arg, ...toolbarFuncRunner(rest)];
+// }
+// const toolbarFuncArgs = ({ action }, layer, MapActions, map) => (
+//   action.map(action => {
+//     if (typeof action === "function") return action;
+//     if (typeof action === "string") {
+//       const [arg1, arg2] = action.split(".");
+//       if (arg1 === "map") {
+//         return arg2 ? MapActions[arg2] : map;
+//       }
+//       else if ((arg1 === "this") && arg2) {
+//         return layer[arg2].bind(layer);
+//       }
+//     }
+//     return action;
+//   })
+// )
+
 const AvlMap = props => {
 
   const id = React.useMemo(() => {
@@ -431,95 +434,6 @@ const AvlMap = props => {
     });
   }, [state.map]);
 
-// DETERMINE ACTIVE AND INACTIVE LAYERS
-  const [activeLayers, inactiveLayers] = React.useMemo(() => {
-    const result = [
-      ...layers,
-      ...state.dynamicLayers
-    ].filter(({ id }) => initializedLayers.current.includes(id))
-      .reduce((a, c) => {
-        if (state.activeLayers.includes(c.id)) {
-          a[0].push(c);
-        }
-        else {
-          a[1].push(c);
-        }
-        return a;
-      }, [[], []]);
-    const sortOrder = state.activeLayers.reduce((a, c, i) => {
-      a[c] = i;
-      return a;
-    }, {});
-    result[0].sort((a, b) => sortOrder[a.id] - sortOrder[b.id]);
-    return result;
-  }, [layers, state.dynamicLayers, state.activeLayers]);
-
-// SEND PROPS TO ACTIVE LAYERS
-  React.useEffect(() => {
-    activeLayers.forEach(layer => {
-      const props = get(layerProps, layer.id);
-      if (props) {
-        layer.receiveProps(props, state.map, falcor);
-      }
-    });
-  }, [state.map, falcor, activeLayers, layerProps]);
-
-  const setMapStyle = React.useCallback(styleIndex => {
-    state.map.once('style.load', e => {
-      activeLayers.slice().reverse().reduce((promise, layer) => {
-        return promise.then(() => layer._onAdd(state.map, falcor, updateHover))
-          .then(() => layer.render(state.map, falcor))
-      }, Promise.resolve());
-    });
-    activeLayers.forEach(layer => {
-      layer._onRemove(state.map);
-    });
-    state.map.setStyle(state.mapStyles[styleIndex].style);
-    dispatch({
-      type: "set-map-style",
-      styleIndex
-    });
-  }, [state.map, state.mapStyles, activeLayers, updateHover, falcor]);
-
-// INITIALIZE LAYERS
-  React.useEffect(() => {
-    if (!state.map) return;
-
-    [...layers,
-      ...state.dynamicLayers
-    ].filter(({ id }) => !initializedLayers.current.includes(id)).reverse()
-      .reduce((promise, layer) => {
-        initializedLayers.current.push(layer.id);
-
-        for (const filterName in layer.filters) {
-          layer.filters[filterName].onChange = v => updateFilter(layer, filterName, v);
-        }
-
-        layer.toolbar.forEach(tool => {
-          if (typeof tool === "object") {
-            tool.actionFunc = (layer, MapActions) => {
-              toolbarFuncRunner(toolbarFuncArgs(tool, layer, MapActions, state.map))
-            };
-          }
-        })
-
-        dispatch({ type: "loading-start", layerId: layer.id });
-
-        return promise.then(() => layer._init(state.map, falcor))
-          .then(() => {
-            if (layer.setActive) {
-              return layer.fetchData(falcor)
-                .then(() => layer._onAdd(state.map, falcor, updateHover))
-                .then(() => layer.render(state.map, falcor))
-                .then(() => dispatch({ type: "init-layer", layerId: layer.id }));
-            }
-          })
-          .then(() => {
-            dispatch({ type: "loading-stop", layerId: layer.id });
-          });
-      }, Promise.resolve());
-  }, [state.map, state.dynamicLayers, falcor, layers, updateFilter, updateHover]);
-
 // LOAD MAPBOX GL MAP
   React.useEffect(() => {
     if (!accessToken) return;
@@ -552,18 +466,6 @@ const AvlMap = props => {
       style: mapStyles[0].style
     });
 
-    // const pinHoverComp = ({ lngLat }) => {
-    //   // const marker = new mapboxgl.Marker()
-    //   //   .setLngLat(lngLat)
-    //   //   .addTo(map);
-    //   dispatch({
-    //     type: "pin-hover-comp",
-    //     // marker,
-    //     lngLat
-    //   });
-    // }
-    // map.on("click", pinHoverComp);
-
     map.on("move", e => {
       dispatch({ type: "update-state", mapMoved: performance.now() });
     });
@@ -576,14 +478,46 @@ const AvlMap = props => {
 
   }, [accessToken, id, mapOptions]);
 
-  // React.useEffect(() => {
-  //   state.pinnedHoverComps.forEach(({ marker, lngLat }) => {
-  //     if (!marker.getLngLat()) {
-  //       marker.setLngLat(lngLat)
-  //         .addTo(state.map);
-  //     }
-  //   })
-  // }, [state.map, state.pinnedHoverComps]);
+// INITIALIZE LAYERS
+  React.useEffect(() => {
+    if (!state.map) return;
+
+    [...layers,
+      ...state.dynamicLayers
+    ].filter(({ id }) => !initializedLayers.current.includes(id)).reverse()
+      .reduce((promise, layer) => {
+        initializedLayers.current.push(layer.id);
+
+        for (const filterName in layer.filters) {
+          layer.filters[filterName].onChange = v => updateFilter(layer, filterName, v);
+        }
+
+        layer.toolbar.forEach(tool => {
+          if (typeof tool.action === "function") {
+            tool.actionFunc = tool.action.bind(layer);
+          }
+        })
+
+        layer.mapActions.forEach(action => {
+          action.actionFunc = action.action.bind(layer);
+        })
+
+        dispatch({ type: "loading-start", layerId: layer.id });
+
+        return promise.then(() => layer._init(state.map, falcor))
+          .then(() => {
+            if (layer.setActive) {
+              return layer.fetchData(falcor)
+                .then(() => layer._onAdd(state.map, falcor, updateHover))
+                .then(() => layer.render(state.map, falcor))
+                .then(() => dispatch({ type: "init-layer", layerId: layer.id }));
+            }
+          })
+          .then(() => {
+            dispatch({ type: "loading-stop", layerId: layer.id });
+          });
+      }, Promise.resolve());
+  }, [state.map, state.dynamicLayers, falcor, layers, updateFilter, updateHover]);
 
   const pinHoverComp = React.useCallback(({ lngLat }) => {
     const marker = new mapboxgl.Marker()
@@ -619,21 +553,48 @@ const AvlMap = props => {
     return { ...state.hoverData, show: Boolean(HoverComps.length), HoverComps };
   }, [state.hoverData]);
 
-  const Modals = React.useMemo(() => {
-    return state.modalData.reduce((a, md) => {
-      const { modal, layer } = activeLayers
-        .reduce((a, c) => {
-          return c.id === md.layerId ?
-            { modal: get(c, ["modals", md.modalKey]), layer: c } : a; }, {});
-      if (modal) {
-        a.push({ ...modal, modalData: md, layer });
-      }
-      return a;
-    }, []);
-  }, [activeLayers, state.modalData]);
-
   const ref = React.useRef(null),
     size = useSetSize(ref);
+
+// DETERMINE ACTIVE AND INACTIVE LAYERS
+  const [activeLayers, inactiveLayers] = React.useMemo(() => {
+    const result = [
+      ...layers,
+      ...state.dynamicLayers
+    ].filter(({ id }) => initializedLayers.current.includes(id))
+      .reduce((a, c) => {
+        if (state.activeLayers.includes(c.id)) {
+          a[0].push(c);
+        }
+        else {
+          a[1].push(c);
+        }
+        return a;
+      }, [[], []]);
+    const sortOrder = state.activeLayers.reduce((a, c, i) => {
+      a[c] = i;
+      return a;
+    }, {});
+    result[0].sort((a, b) => sortOrder[a.id] - sortOrder[b.id]);
+    return result;
+  }, [layers, state.dynamicLayers, state.activeLayers]);
+
+  const setMapStyle = React.useCallback(styleIndex => {
+    state.map.once('style.load', e => {
+      activeLayers.slice().reverse().reduce((promise, layer) => {
+        return promise.then(() => layer._onAdd(state.map, falcor, updateHover))
+          .then(() => layer.render(state.map, falcor))
+      }, Promise.resolve());
+    });
+    activeLayers.forEach(layer => {
+      layer._onRemove(state.map);
+    });
+    state.map.setStyle(state.mapStyles[styleIndex].style);
+    dispatch({
+      type: "set-map-style",
+      styleIndex
+    });
+  }, [state.map, state.mapStyles, activeLayers, updateHover, falcor]);
 
   const MapActions = {
     mapState: state,
@@ -651,8 +612,32 @@ const AvlMap = props => {
     removePinnedHoverComp,
     addPinnedHoverComp,
     bringModalToFront,
-    updateModalData
+    updateModalData,
+    projectLngLat
   };
+
+// SEND PROPS TO ACTIVE LAYERS
+  React.useEffect(() => {
+    activeLayers.forEach(layer => {
+      const props = get(layerProps, layer.id);
+      if (props) {
+        layer.receiveProps(props, state.map, falcor);
+      }
+    });
+  }, [state.map, falcor, activeLayers, layerProps]);
+
+  const Modals = React.useMemo(() => {
+    return state.modalData.reduce((a, md) => {
+      const { modal, layer } = activeLayers
+        .reduce((a, c) => {
+          return c.id === md.layerId ?
+            { modal: get(c, ["modals", md.modalKey]), layer: c } : a; }, {});
+      if (modal) {
+        a.push({ ...modal, modalData: md, layer });
+      }
+      return a;
+    }, []);
+  }, [activeLayers, state.modalData]);
 
   return (
     <MapContainer ref={ ref } className="flex-grow relative flex focus:outline-none">
@@ -676,6 +661,24 @@ const AvlMap = props => {
           }
         </div>
 
+        <div className="absolute top-0">
+          { activeLayers.reduce((a, c, i ) => {
+              const actions = get(c, "mapActions", [])
+                .map(action => ({ action, layer: c }))
+              return [...a, ...actions];
+            }, [])
+            .map(({ action, layer }, i) => (
+              <MapAction key={ `${ layer.id }-${ i }` }
+                layer={ layer } { ...action }
+                MapActions={ MapActions }
+                layersLoading={ state.layersLoading }
+                inactiveLayers={ inactiveLayers }
+                activeLayers={ activeLayers }
+                loadingLayers={ loadingLayers }/>
+            ))
+          }
+        </div>
+
       </Sidebar>
 
       <InfoBoxes activeLayers={ activeLayers }
@@ -684,20 +687,23 @@ const AvlMap = props => {
         inactiveLayers={ inactiveLayers }
         MapActions={ MapActions }/>
 
-      <HoverCompContainer { ...hoverData } { ...size }>
-        { HoverComps.map(({ HoverComp, data, layer }, i) => (
-            <div key={ layer.id }
-              className={ `${ i > 0 ? "mt-1" : "" } relative` }>
-              <HoverComp layer={ layer } data={ data }
-                activeLayers={ activeLayers }
-                layersLoading={ state.layersLoading }
-                loadingLayers={ loadingLayers }
-                inactiveLayers={ inactiveLayers }
-                MapActions={ MapActions }/>
-            </div>
-          ))
-        }
-      </HoverCompContainer>
+      { !Boolean(state.hoverData.data.size) ? null :
+        <HoverCompContainer { ...hoverData } { ...size }
+          project={ projectLngLat }>
+          { HoverComps.map(({ HoverComp, data, layer }, i) => (
+              <div key={ layer.id }
+                className={ `${ i > 0 ? "mt-1" : "" } relative` }>
+                <HoverComp layer={ layer } data={ data }
+                  activeLayers={ activeLayers }
+                  layersLoading={ state.layersLoading }
+                  loadingLayers={ loadingLayers }
+                  inactiveLayers={ inactiveLayers }
+                  MapActions={ MapActions }/>
+              </div>
+            ))
+          }
+        </HoverCompContainer>
+      }
 
       <div className={ `
         absolute top-0 bottom-0 left-0 right-0 z-50

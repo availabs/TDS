@@ -4,9 +4,9 @@ import { useTheme } from "@availabs/avl-components"
 
 import { Icon } from "./LayerPanel"
 
-const getTranslate = ({ pos, width, height }) => {
+const getTranslate = (pos, { width, height }) => {
 
-  const gap = 30, padding = 10, [x, y] = pos;
+  const gap = 30, padding = 10, { x, y } = pos;
 
   const yMax = height,
     yTrans = `max(
@@ -122,8 +122,11 @@ export const PinnedHoverComp = ({ children, remove, id, project, lngLat, width }
   )
 }
 
-export const HoverCompContainer = ({ show, children, ...rest }) => {
+export const HoverCompContainer = ({ show, children, lngLat, project, ...rest }) => {
   const theme = useTheme();
+
+  const pos = project(lngLat);
+
   return (
     <div className={ `
         absolute top-0 left-0 z-20
@@ -133,7 +136,7 @@ export const HoverCompContainer = ({ show, children, ...rest }) => {
       ` }
       style={ {
         display: show ? "inline-block" : "none",
-        transform: getTranslate(rest),
+        transform: getTranslate(pos, rest),
         boxShadow: "2px 2px 8px 0px rgba(0, 0, 0, 0.75)",
         // transition: "transform 0.15s ease-out"
       } }>

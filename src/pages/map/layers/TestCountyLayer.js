@@ -83,10 +83,15 @@ class TestCountyLayer extends LayerContainer {
     { Component: props => (
         <div>
           TEST INFO BOX WITHOUT A HEADER<br />
+          THIS IS NOT CLOSABLE<br />
           TEST INFO BOX WITHOUT A HEADER<br />
+          THIS IS NOT CLOSABLE<br />
           TEST INFO BOX WITHOUT A HEADER<br />
+          THIS IS NOT CLOSABLE<br />
           TEST INFO BOX WITHOUT A HEADER<br />
-          TEST INFO BOX WITHOUT A HEADER
+          THIS IS NOT CLOSABLE<br />
+          TEST INFO BOX WITHOUT A HEADER<br />
+          THIS IS NOT CLOSABLE
         </div>
       )
     }
@@ -101,6 +106,20 @@ class TestCountyLayer extends LayerContainer {
       Header: "Test Modal 2"
     }
   }
+  mapActions = [
+    { tooltip: "Does Seomthing",
+      icon: "fa-thumbs-up",
+      action: MapActions => console.log("ACTION 1:", this.name)
+    },
+    { tooltip: "Does Seomthing Else",
+      icon: "fa-cog",
+      action: MapActions => console.log("ACTION 2:", this.name)
+    },
+    { tooltip: "Does Seomthing Else",
+      icon: "fa-tools",
+      action: MapActions => console.log("ACTION 3???", this.name)
+    }
+  ]
   sources = [
     { id: "counties",
       source: {
@@ -136,19 +155,21 @@ class TestCountyLayer extends LayerContainer {
     "toggle-visibility",
     { tooltip: "Add Dynamic Layer 1",
       icon: "fa-thumbs-up",
-      action: ["map.addDynamicLayer", "this.createDynamicLayer"]
+      action: MapActions => MapActions.addDynamicLayer(TestDynamicLayerFactory())
     },
     { tooltip: "Add Dynamic Layer 2",
       icon: "fa-surprise",
-      action: ["map.addDynamicLayer", TestDynamicLayerFactory]
+      action: function(MapActions) {
+        MapActions.addDynamicLayer(this.createDynamicLayer());
+      }
     },
     { tooltip: "Open Modal 1",
       icon: "fa-cog",
-      action: ["map.showModal", this.id, "test1", { test: "props" }]
+      action: MapActions => MapActions.showModal(this.id, "test1", { test: "props" })
     },
     { tooltip: "Open Modal 2",
       icon: "fa-tools",
-      action: ["map.showModal", this.id, "test2"]
+      action: MapActions => MapActions.showModal(this.id, "test2")
     }
   ]
 

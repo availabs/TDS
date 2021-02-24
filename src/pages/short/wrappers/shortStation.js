@@ -5,7 +5,9 @@ import { useParams } from "react-router-dom"
 import get from "lodash.get"
 import { format as d3format } from "d3"
 
-import { YEARS, REGIONS, useAsyncSafe } from "./short"
+import { YEARS, REGIONS } from "./short"
+
+import { useAsyncSafe } from "avl-components"
 
 const numFormat = d3format(",d");
 
@@ -31,7 +33,7 @@ const shortStations = Component =>
       falcor.get(["hds", "regions", "byId", REGIONS, ["region", "name"]])
         .then(() =>
           falcor.get([
-            "hds", "short", "stations", "aggregate", YEARS, "byId", stationId, "array"
+            "ris", "short", "stations", "aggregate", YEARS, "byId", stationId, "array"
           ])
         )
         .then(() =>
@@ -50,7 +52,7 @@ const shortStations = Component =>
     const station = React.useMemo(() => {
       const data = YEARS.slice().reverse().map(year => {
         const data = get(falcorCache,
-          ["hds", "short", "stations", "aggregate", year, "byId", stationId, "array", "value"], []
+          ["ris", "short", "stations", "aggregate", year, "byId", stationId, "array", "value"], []
         )
         .map(d => {
           const dd = { ...d };

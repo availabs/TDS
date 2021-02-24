@@ -6,10 +6,10 @@ import { Button, Table, useTheme, ScalableLoading } from "@availabs/avl-componen
 
 const intFormat = d3format(",d");
 
-const RowLengths = {
-  "122": "Short Volume",
-  "41": "Short Class"
-}
+// const RowLengths = {
+//   "122": "Short Volume",
+//   "41": "Short Class"
+// }
 
 const InitialState = {
   files: [],
@@ -74,13 +74,15 @@ const Reducer = (state, action) => {
     //     ]
     //   }
 
+// occurs when files are dropped into drop area
     case "files-dropped":
       return {
         ...state,
-        loading: state.loading + payload.length,
+        loading: payload.length,
         badOver: false,
         over: false
       }
+// occurs when a file is processed successfully
     case "add-file":
       return {
         ...state,
@@ -90,6 +92,7 @@ const Reducer = (state, action) => {
           payload.file
         ]
       }
+// occurs when a file fails to process
     case "add-error":
       return {
         ...state,
@@ -122,7 +125,19 @@ const Reducer = (state, action) => {
           return file;
         })
       }
-
+    case "upload-error": {
+      const { fileNames, ...rest } = payload;
+      return {
+        ...state,
+        loading: state.loading - payload.fileNames.length,
+        files: state.files.map(file => {
+          if (fileNames.includes(file.name)) {
+            return { ...file, status: "upload-error", ...rest };
+          }
+          return file;
+        })
+      }
+    }
     case "remove-file":
       return {
         ...state,
@@ -150,28 +165,39 @@ const Reducer = (state, action) => {
 }
 
 const makeMyWorker = dispatch => {
-  const worker = new Worker("shortWorker.js", { type: "module" });
-  worker.onmessage = msg => {
+  const worker = new Worker("/js/shortWorker.js", { type: "module" });
+  worker.onmessage = post => {
 
-console.log("FROM WORKER:", msg);
+console.log("FROM WORKER:", post);
 
-    const { result } = msg.data;
+    const { result, msg } = post.data;
     if (result.type === "file") {
       dispatch({
         type: "add-file",
-        file: result.file
+        file: result.file,
+        msg
       })
     }
     else if (result.type === "error") {
       dispatch({
         type: "add-error",
-        error: result.error
+        error: result.error,
+        msg
       })
     }
     else if (result.type === "upload-success") {
       dispatch({
         type: "upload-success",
-        fileNames: result["upload-success"]
+        fileNames: result["upload-success"],
+        msg
+      })
+    }
+    else if (result.type === "upload-error") {
+      dispatch({
+        type: "upload-error",
+        fileNames: result["upload-error"],
+        error: result.error,
+        msg
       })
     }
   }
@@ -269,17 +295,11 @@ const ShortUploader = ({ user }) => {
     });
   }, [dispatch, state.worker]);
   const removeAllFiles = React.useCallback(() => {
-    dispatch({ type: "remove-all-files" });
     state.worker.postMessage({
       type: "remove-all-files"
     });
+    dispatch({ type: "remove-all-files" });
   }, [dispatch, state.worker]);
-  const uploadSuccess = React.useCallback(fileNames => {
-    dispatch({
-      type: "upload-success",
-      fileNames
-    })
-  }, [dispatch]);
 
   const uploadFile = React.useCallback(file => {
     state.worker.postMessage({
@@ -313,17 +333,17 @@ const ShortUploader = ({ user }) => {
       { accessor: "dataType",
         Header: "Data Type"
       },
-      { accessor: "stationId",
-        Header: "Station ID"
-      },
-      { accessor: "countId",
-        Header: "Count ID"
-      },
+      // { accessor: "stationId",
+      //   Header: "Station ID"
+      // },
+      // { accessor: "countId",
+      //   Header: "Count ID"
+      // },
       { accessor: "status",
         Header: "Status",
-        Cell: ({ value }) => {
+        Cell: ({ row }) => {
           return (
-            <StatusComponent status={ value }/>
+            <StatusComponent file={ row.original }/>
           )
         }
       },
@@ -538,7 +558,8 @@ const TableContainer = ({ children }) => {
   )
 }
 
-const StatusComponent = ({ status }) => {
+const StatusComponent = ({ file }) => {
+  const { status, error } = file;
   return (
     status === "uploading" ? (
       <div className="flex items-center">
@@ -550,6 +571,12 @@ const StatusComponent = ({ status }) => {
         <span className="fa fa-thumbs-up"/>
         <span className="ml-2">upload succeeded</span>
       </div>
+    ) : status === "upload-error" ? (
+      <div className="flex items-center">
+        <span className="fa fa-thumbs-up"
+          style={ { transform: "scaleY(-1)" } }/>
+        <span className="ml-2">upload failed: { error }</span>
+      </div>
     ) : (
       <div className="flex items-center">
         <span className="fa fa-file"/>
@@ -559,50 +586,50 @@ const StatusComponent = ({ status }) => {
   )
 }
 
-const PromiseReader = file => {
-  return new Promise((resolve, reject) => {
-    const fr = new FileReader();
-    const { name, size, type } = file;
-
-    fr.onerror = e => {
-      reject({
-        type: "add-error",
-        error: {
-          name, size, mimeType: type,
-          error: "failed to load",
-          action: "remove"
-        }
-      });
-    };
-    fr.onload = loaded => {
-      const result = loaded.target.result,
-        data = result.trim().split(/[\n]+/)
-          .map(row => row.trim().split(/[,]/).map(r => r.trim()));
-
-      let len = data[0].length;
-
-      const fileOK = data.reduce((a, c, i) => {
-        if (i === 0) return a;
-        return a && (c.length in RowLengths) && (len === c.length);
-      }, true);
-
-      if (!fileOK) {
-        reject({
-          name, size, mimeType: type,
-          error: "incorrect data format",
-          action: "remove", rawData: result
-        })
-      }
-      else {
-        resolve({
-          name, size, mimeType: type, data, file,
-          dataType: RowLengths[len],
-          status: "awaiting-upload",
-          upload: "upload", remove: "remove",
-          rawData: result
-        });
-      }
-    };
-    fr.readAsText(file);
-  })
-}
+// const PromiseReader = file => {
+//   return new Promise((resolve, reject) => {
+//     const fr = new FileReader();
+//     const { name, size, type } = file;
+//
+//     fr.onerror = e => {
+//       reject({
+//         type: "add-error",
+//         error: {
+//           name, size, mimeType: type,
+//           error: "failed to load",
+//           action: "remove"
+//         }
+//       });
+//     };
+//     fr.onload = loaded => {
+//       const result = loaded.target.result,
+//         data = result.trim().split(/[\n]+/)
+//           .map(row => row.trim().split(/[,]/).map(r => r.trim()));
+//
+//       let len = data[0].length;
+//
+//       const fileOK = data.reduce((a, c, i) => {
+//         if (i === 0) return a;
+//         return a && (c.length in RowLengths) && (len === c.length);
+//       }, true);
+//
+//       if (!fileOK) {
+//         reject({
+//           name, size, mimeType: type,
+//           error: "incorrect data format",
+//           action: "remove", rawData: result
+//         })
+//       }
+//       else {
+//         resolve({
+//           name, size, mimeType: type, data, file,
+//           dataType: RowLengths[len],
+//           status: "awaiting-upload",
+//           upload: "upload", remove: "remove",
+//           rawData: result
+//         });
+//       }
+//     };
+//     fr.readAsText(file);
+//   })
+// }

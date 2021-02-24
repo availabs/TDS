@@ -22,3 +22,14 @@ export const useSetSize = ref => {
 
   return size;
 }
+
+export const useAsyncSafe = func => {
+  const mounted = React.useRef(false);
+  React.useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
+  return React.useCallback((...args) => {
+    mounted.current && func(...args);
+  }, [func]);
+}

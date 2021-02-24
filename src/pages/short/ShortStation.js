@@ -21,7 +21,7 @@ const ShortStation = ({ station, years, stations }) => {
   , [stations, year]);
 
   return (
-    <div className="mx-10 my-8 grid grid-cols-2 gap-6">
+    <div className="m-10 grid grid-cols-2 gap-6">
       <div className="text-5xl font-bold col-span-2">
         Station ID: { station.stationId }
       </div>

@@ -51,7 +51,13 @@ const Reducer = (state, action) => {
   }
 }
 
-export const Draggable = ({ bounds, children, toolbar = [], style = {}, className = "", ...props }) => {
+export const Draggable = ({ bounds,
+                            children,
+                            toolbar = [],
+                            style = {},
+                            className = "",
+                            onDragStart = null,
+                            ...props }) => {
 
   const [state, dispatch] = React.useReducer(Reducer, InitialState);
 
@@ -102,6 +108,9 @@ export const Draggable = ({ bounds, children, toolbar = [], style = {}, classNam
       window.removeEventListener("mousemove", dragMove);
       dispatch({ type: "drag-end" });
     }
+    if (typeof onDragStart === "function") {
+      onDragStart(e);
+    }
     window.addEventListener("mousemove", dragMove);
     window.addEventListener("mouseup", dragEnd, { once: true });
     e.stopPropagation();
@@ -110,7 +119,7 @@ export const Draggable = ({ bounds, children, toolbar = [], style = {}, classNam
       type: "drag-start",
       currPos: [e.clientX, e.clientY]
     });
-  }, [dragMove]);
+  }, [dragMove, onDragStart]);
 
   const ref = React.useRef();
   React.useLayoutEffect(() => {

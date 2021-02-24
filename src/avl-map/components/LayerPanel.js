@@ -68,7 +68,7 @@ export const Icon = ({ onClick, cursor="cursor-pointer", className="", style={},
     <div onClick={ onClick }
       className={ `
         ${ cursor } ${ className } transition h-6 w-6
-        hover:${ theme.textInfo } flex items-center justify-center
+        hover:${ theme.menuTextActive } flex items-center justify-center
       ` }
       style={ { ...style } }>
       { children }
@@ -189,7 +189,7 @@ const LayerTool = ({ tool, layer, MapActions }) => {
       return DefaultToolbars[tool];
     }
     return ({ layer, MapActions }) => (
-      <Icon onClick={ e => tool.actionFunc(layer, MapActions) }>
+      <Icon onClick={ e => tool.actionFunc(MapActions, layer) }>
         <span className={ `fa fa-sm ${ tool.icon }` }/>
       </Icon>
     )
