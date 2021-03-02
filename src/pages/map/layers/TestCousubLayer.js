@@ -117,7 +117,7 @@ class TestCousubLayer extends LayerContainer {
         const cousubs = get(res, ["json", "geo", "36", "cousubs"]);
         return falcor.chunk(
             ["geo", cousubs, "name"],
-            { onProgress: (curr, total) => { console.log("progress:", curr / total); } }
+            // { onProgress: (curr, total) => { console.log("progress:", curr / total); } }
           )
           .then(res => {
             const cache = falcor.getCache();

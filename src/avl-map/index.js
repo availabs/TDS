@@ -298,7 +298,7 @@ const AvlMap = props => {
     layerProps = EmptyObject
   } = props;
 
-  const { falcor } = useFalcor();
+  const { falcor, falcorCache } = useFalcor();
 
   const [state, dispatch] = React.useReducer(Reducer, InitialState);
 
@@ -618,7 +618,8 @@ const AvlMap = props => {
   }, [state.map, state.mapStyles, activeLayers, updateHover, falcor]);
 
   const MapActions = {
-    mapState: state,
+    mapboxMap: state.map,
+    layerStates: state.layerStates,
     toggleVisibility,
     addLayer,
     removeLayer,
@@ -633,24 +634,19 @@ const AvlMap = props => {
     removePinnedHoverComp,
     addPinnedHoverComp,
     bringModalToFront,
-    // updateModalData,
     projectLngLat
   };
 
 // SEND PROPS TO ACTIVE LAYERS
   React.useEffect(() => {
     activeLayers.forEach(layer => {
-      const props = get(layerProps, layer.id);
-      if (props) {
-        layer.receiveProps(props, state.map, falcor);
-      }
+      const props = get(layerProps, layer.id, { falcorCache });
+      layer.receiveProps(props, state.map, falcor);
     });
-  }, [state.map, falcor, activeLayers, layerProps]);
+  }, [state.map, falcor, falcorCache, activeLayers, layerProps]);
 
   const ref = React.useRef(null),
     size = useSetSize(ref);
-
-console.log("SIZE:", size)
 
   const Modals = React.useMemo(() => {
     return state.modalData.reduce((a, md) => {

@@ -98,10 +98,10 @@ const StylesTab = ({ mapStyles, styleIndex, MapActions }) => {
   React.useEffect(() => {
     if (loading) {
       const done = () => setLoading(false);
-      MapActions.mapState.map.once("style.load", done);
-      return () => MapActions.mapState.map.off("style.load", done);
+      MapActions.mapboxMap.once("style.load", done);
+      return () => MapActions.mapboxMap.off("style.load", done);
     }
-  }, [loading, MapActions.mapState.map]);
+  }, [loading, MapActions.mapboxMap]);
 
   const updateStyle = React.useCallback(index => {
     setLoading(true);
