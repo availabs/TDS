@@ -1,6 +1,6 @@
 import React from "react"
 
-export const TestModal1 = ({ layer, ...props }) => {
+export const TestModal1 = ({ layer }) => {
   return (
     <div className="w-screen max-w-2xl h-64">
       STUFF GOES HERE!!! WOOHOOHOO!!!<br />
@@ -8,7 +8,8 @@ export const TestModal1 = ({ layer, ...props }) => {
       STUFF GOES HERE!!! WOOHOOHOO!!!<br />
       STUFF GOES HERE!!! WOOHOOHOO!!!<br />
       STUFF GOES HERE!!! WOOHOOHOO!!!<br />
-      STUFF GOES HERE!!!
+      STUFF GOES HERE!!!<br />
+      { JSON.stringify(layer.state) }
     </div>
   )
 }
@@ -20,6 +21,7 @@ export const TestModal2 = ({ layer }) => {
       STUFF GOES HERE!!!<br />
       STUFF GOES HERE!!!<br />
       STUFF GOES HERE!!!<br />
+      { JSON.stringify(layer.state) }
     </div>
   )
 }

@@ -40,7 +40,7 @@ const DraggableModal = ({ Header,
         }
         <div className={ `p-1 rounded ${ theme.menuBg }` }>
           <div className={ `p-1 rounded ${ theme.bg }` }>
-            { <Component { ...modalData } layer={ layer }
+            { <Component layer={ layer }
                 MapActions={ MapActions }
                 activeLayers={ activeLayers }
                 layersLoading={ layersLoading }

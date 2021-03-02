@@ -20,7 +20,8 @@ const DefaultOptions = {
   isVisible: true,
   toolbar: ["toggle-visibility"],
   legend: null,
-  infoBoxes: []
+  infoBoxes: [],
+  state: {}
 }
 
 class LayerContainer {
@@ -39,16 +40,26 @@ class LayerContainer {
 
     this.callbacks = [];
     this.hoveredFeatures = new Map();
+
+    this.dispatchUpdate = () => {};
+
+    this.updateState = this.updateState.bind(this);
   }
   _init(map, falcor) {
     return this.init(map, falcor);
   }
   init(map, falcor) {
-    return Promise.resolve({
-      filters: this.filters,
-      modals: this.modals,
-      mapActions: this.mapActions
-    });
+    return Promise.resolve();
+  }
+
+  updateState(newState) {
+    if (typeof newState === "function") {
+      this.state = newState(this.state);
+    }
+    else {
+      this.state = { ...this.state, ...newState };
+    }
+    this.dispatchUpdate(this, this.state);
   }
 
   _onAdd(map, falcor, updateHover) {
@@ -236,7 +247,7 @@ class LayerContainer {
 
   onMapStyleChange(map, falcor, updateHover) {
     this._onAdd(map, falcor, updateHover)
-      .then(() => this.render(map))
+      .then(() => this.render(map, falcor))
   }
 }
 export default LayerContainer;

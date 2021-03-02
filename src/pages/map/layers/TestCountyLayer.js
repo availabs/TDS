@@ -13,6 +13,11 @@ import { TestModal1, TestModal2 } from "./TestModal"
 class TestCountyLayer extends LayerContainer {
   name = "Counties"
 
+  state = {
+    key1: "value1",
+    key2: "value2"
+  }
+
   filters = {
     counties: {
       name: "Counties",
@@ -68,19 +73,20 @@ class TestCountyLayer extends LayerContainer {
   }
   infoBoxes = [
     { Header: "Counties Info Box",
-      Component: props => {
+      Component: ({ layer }) => {
         return (
           <div>
             TEST INFO BOX WITH A HEADER<br />
             TEST INFO BOX WITH A HEADER<br />
             TEST INFO BOX WITH A HEADER<br />
             TEST INFO BOX WITH A HEADER<br />
-            TEST INFO BOX WITH A HEADER
+            TEST INFO BOX WITH A HEADER<br />
+            { JSON.stringify(layer.state) }
           </div>
         )
       }
     },
-    { Component: props => (
+    { Component: ({ layer }) => (
         <div>
           TEST INFO BOX WITHOUT A HEADER<br />
           THIS IS NOT CLOSABLE<br />
@@ -91,7 +97,8 @@ class TestCountyLayer extends LayerContainer {
           TEST INFO BOX WITHOUT A HEADER<br />
           THIS IS NOT CLOSABLE<br />
           TEST INFO BOX WITHOUT A HEADER<br />
-          THIS IS NOT CLOSABLE
+          THIS IS NOT CLOSABLE<br />
+          { JSON.stringify(layer.state) }
         </div>
       )
     }
@@ -109,15 +116,36 @@ class TestCountyLayer extends LayerContainer {
   mapActions = [
     { tooltip: "Does Seomthing",
       icon: "fa-thumbs-up",
-      action: MapActions => console.log("ACTION 1:", this.name)
+      action: MapActions => this.updateState({ key1: "thumbs-up", key2: "test1" })
     },
     { tooltip: "Does Seomthing Else",
       icon: "fa-cog",
-      action: MapActions => console.log("ACTION 2:", this.name)
+      action: MapActions => this.updateState({ key1: "cog", key2: "test2" })
     },
     { tooltip: "Does Seomthing Else",
       icon: "fa-tools",
-      action: MapActions => console.log("ACTION 3???", this.name)
+      action: MapActions => this.updateState({ key1: "tools", key2: "test3" })
+    }
+  ]
+  toolbar = [
+    "toggle-visibility",
+    { tooltip: "Add Dynamic Layer 1",
+      icon: "fa-thumbs-up",
+      action: MapActions => MapActions.addDynamicLayer(TestDynamicLayerFactory())
+    },
+    { tooltip: "Add Dynamic Layer 2",
+      icon: "fa-surprise",
+      action: function(MapActions) {
+        MapActions.addDynamicLayer(this.createDynamicLayer());
+      }
+    },
+    { tooltip: "Open Modal 1",
+      icon: "fa-cog",
+      action: MapActions => MapActions.showModal(this.id, "test1")
+    },
+    { tooltip: "Open Modal 2",
+      icon: "fa-tools",
+      action: MapActions => MapActions.showModal(this.id, "test2")
     }
   ]
   sources = [
@@ -149,27 +177,6 @@ class TestCountyLayer extends LayerContainer {
           20, 0.1
         ]
       }
-    }
-  ]
-  toolbar = [
-    "toggle-visibility",
-    { tooltip: "Add Dynamic Layer 1",
-      icon: "fa-thumbs-up",
-      action: MapActions => MapActions.addDynamicLayer(TestDynamicLayerFactory())
-    },
-    { tooltip: "Add Dynamic Layer 2",
-      icon: "fa-surprise",
-      action: function(MapActions) {
-        MapActions.addDynamicLayer(this.createDynamicLayer());
-      }
-    },
-    { tooltip: "Open Modal 1",
-      icon: "fa-cog",
-      action: MapActions => MapActions.showModal(this.id, "test1", { test: "props" })
-    },
-    { tooltip: "Open Modal 2",
-      icon: "fa-tools",
-      action: MapActions => MapActions.showModal(this.id, "test2")
     }
   ]
 

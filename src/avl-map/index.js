@@ -73,7 +73,8 @@ const InitialState = {
   mapStyles: [],
   styleIndex: 0,
   sidebarTabIndex: 0,
-  modalData: []
+  modalData: [],
+  layerStates: {}
 }
 const Reducer = (state, action) => {
   const { type, ...payload } = action;
@@ -82,9 +83,13 @@ const Reducer = (state, action) => {
       return {
         ...state,
         activeLayers: [
-          payload.layerId,
+          payload.layer.id,
           ...state.activeLayers
-        ]
+        ],
+        layerStates: {
+          ...state.layerStates,
+          [payload.layer.id]: payload.layer.state
+        }
       };
     case "loading-start":
       return {
@@ -118,7 +123,6 @@ const Reducer = (state, action) => {
     case "hover-layer-move": {
       const { data, layer, HoverComp, ...rest } = payload;
       state.hoverData.data.set(layer.id, { data, HoverComp, layer });
-  console.log(rest)
       return {
         ...state,
         hoverData: {
@@ -185,7 +189,7 @@ const Reducer = (state, action) => {
         dynamicLayers: state.dynamicLayers.filter(({ id }) => id !== payload.layer.id)
       }
     case "show-modal": {
-      const { layerId, modalKey, ...modalData } = payload;
+      const { layerId, modalKey } = payload;
       if (state.modalData.reduce((a, c) => (
         a || ((c.layerId === layerId) && (c.modalKey === modalKey))
       ), false)) return state;
@@ -193,7 +197,7 @@ const Reducer = (state, action) => {
         ...state,
         modalData: [
           ...state.modalData,
-          { layerId, modalKey, zIndex: 0, ...modalData }
+          { layerId, modalKey, zIndex: 0 }
         ]
       }
     }
@@ -206,18 +210,18 @@ const Reducer = (state, action) => {
         }))
       }
     };
-    case "update-modal-data": {
-      const { layerId, modalKey, data } = payload;
-      return {
-        ...state,
-        modalData: state.modalData.map(md => {
-          if ((md.layerId === layerId) && (md.modalKey === modalKey)) {
-            return { ...md, data };
-          }
-          return md;
-        })
-      }
-    }
+    // case "update-modal-data": {
+    //   const { layerId, modalKey, data } = payload;
+    //   return {
+    //     ...state,
+    //     modalData: state.modalData.map(md => {
+    //       if ((md.layerId === layerId) && (md.modalKey === modalKey)) {
+    //         return { ...md, data };
+    //       }
+    //       return md;
+    //     })
+    //   }
+    // }
     case "close-modal":
       return {
         ...state,
@@ -225,6 +229,16 @@ const Reducer = (state, action) => {
           !((layerId === payload.layerId) && (modalKey === payload.modalKey))
         )
       }
+    case "layer-update": {
+      const { layer, newState } = payload;
+      return {
+        ...state,
+        layerStates: {
+          ...state.layerStates,
+          [layer.id]: newState
+        }
+      }
+    }
     case "set-map-style":
     case "switch-tab":
     case "map-loaded":
@@ -386,22 +400,22 @@ const AvlMap = props => {
       sidebarTabIndex
     });
   }, []);
-  const showModal = React.useCallback((layerId, modalKey, data = {}) => {
+
+  const showModal = React.useCallback((layerId, modalKey) => {
     dispatch({
       type: "show-modal",
       layerId,
-      modalKey,
-      data
+      modalKey
     });
   }, []);
-  const updateModalData = React.useCallback((layerId, modalKey, data = {}) => {
-    dispatch({
-      type: "update-modal-data",
-      layerId,
-      modalKey,
-      data
-    });
-  }, []);
+  // const updateModalData = React.useCallback((layerId, modalKey, data = {}) => {
+  //   dispatch({
+  //     type: "update-modal-data",
+  //     layerId,
+  //     modalKey,
+  //     data
+  //   });
+  // }, []);
   const closeModal = React.useCallback((layerId, modalKey) => {
     dispatch({
       type: "close-modal",
@@ -416,6 +430,7 @@ const AvlMap = props => {
       modalKey
     });
   }, []);
+
   // const updateModal = React.useCallback(({ layerI}))
   const removePinnedHoverComp = React.useCallback(id => {
     dispatch({
@@ -488,6 +503,14 @@ const AvlMap = props => {
       .reduce((promise, layer) => {
         initializedLayers.current.push(layer.id);
 
+        layer.dispatchUpdate = (layer, newState) => {
+          dispatch({
+            type: "layer-update",
+            newState,
+            layer
+          })
+        };
+
         for (const filterName in layer.filters) {
           layer.filters[filterName].onChange = v => updateFilter(layer, filterName, v);
         }
@@ -510,7 +533,7 @@ const AvlMap = props => {
               return layer.fetchData(falcor)
                 .then(() => layer._onAdd(state.map, falcor, updateHover))
                 .then(() => layer.render(state.map, falcor))
-                .then(() => dispatch({ type: "init-layer", layerId: layer.id }));
+                .then(() => dispatch({ type: "init-layer", layer }));
             }
           })
           .then(() => {
@@ -553,9 +576,6 @@ const AvlMap = props => {
     return { ...state.hoverData, show: Boolean(HoverComps.length), HoverComps };
   }, [state.hoverData]);
 
-  const ref = React.useRef(null),
-    size = useSetSize(ref);
-
 // DETERMINE ACTIVE AND INACTIVE LAYERS
   const [activeLayers, inactiveLayers] = React.useMemo(() => {
     const result = [
@@ -582,8 +602,9 @@ const AvlMap = props => {
   const setMapStyle = React.useCallback(styleIndex => {
     state.map.once('style.load', e => {
       activeLayers.slice().reverse().reduce((promise, layer) => {
-        return promise.then(() => layer._onAdd(state.map, falcor, updateHover))
-          .then(() => layer.render(state.map, falcor))
+        return promise.then(() =>
+          layer.onMapStyleChange(state.map, falcor, updateHover)
+        );
       }, Promise.resolve());
     });
     activeLayers.forEach(layer => {
@@ -612,7 +633,7 @@ const AvlMap = props => {
     removePinnedHoverComp,
     addPinnedHoverComp,
     bringModalToFront,
-    updateModalData,
+    // updateModalData,
     projectLngLat
   };
 
@@ -625,6 +646,11 @@ const AvlMap = props => {
       }
     });
   }, [state.map, falcor, activeLayers, layerProps]);
+
+  const ref = React.useRef(null),
+    size = useSetSize(ref);
+
+console.log("SIZE:", size)
 
   const Modals = React.useMemo(() => {
     return state.modalData.reduce((a, md) => {

@@ -2,6 +2,8 @@ import React from "react"
 
 import { useTheme } from "@availabs/avl-components"
 
+import { useSetSize } from "./utils"
+
 const InitialState = {
   size: [0, 0],
   modalPos: [400, 800],
@@ -121,19 +123,15 @@ export const Draggable = ({ bounds,
     });
   }, [dragMove, onDragStart]);
 
+  const setSize = React.useCallback(({ width, height }) => {
+    dispatch({
+      type: "set-size",
+      size: [width, height]
+    });
+  }, []);
+
   const ref = React.useRef();
-  React.useLayoutEffect(() => {
-    if (!ref.current) return;
-
-    const { width, height } = ref.current.getBoundingClientRect();
-
-    if ((width !== state.size[0]) || (height !== state.size[1])) {
-      dispatch({
-        type: "set-size",
-        size: [width, height]
-      });
-    }
-  });
+  useSetSize(ref, setSize);
 
   const theme = useTheme();
 

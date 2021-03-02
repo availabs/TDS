@@ -6,51 +6,29 @@ const getRect = ref => {
   return node.getBoundingClientRect();
 }
 
-const InitialState = {
-  width: 0,
-  height: 0
-}
-const Reducer = (state, action) => {
-  const { type, ...payload } = action;
-  switch (type) {
-    case "set-size": {
-      const { width, height } = payload;
-      if (width !== state.width || height !== state.height) {
-        return {
-          width, height
-        }
-      }
-      return state;
-    }
-    default:
-      return state;
-  }
-}
+export const useSetSize = (ref, callback) => {
+  const [size, setSize] = React.useState({ width: 0, height: 0, x: 0, y: 0 });
 
-export const useSetSize = ref => {
-  const [size, dispatch] = React.useReducer(Reducer, InitialState)
+  const doSetSize = React.useCallback(() => {
+    const rect = getRect(ref),
+      { width, height, x, y } = rect;
+    if ((width !== size.width) || (height !== size.height)) {
+      if (typeof callback === "function") {
+        callback({ width, height, x, y });
+      }
+      setSize({ width, height, x, y });
+    }
+  }, [ref, size, callback]);
 
   React.useEffect(() => {
-    const onResize = e => {
-      const { width, height } = getRect(ref);
-      dispatch({
-        type: "set-size",
-        width, height
-      });
-    }
-    window.addEventListener("resize", onResize);
-
+    window.addEventListener("resize", doSetSize);
     return () => {
-      window.removeEventListener("resize", onResize);
+      window.removeEventListener("resize", doSetSize);
     }
-  }, [ref]);
+  }, [doSetSize]);
 
-  React.useLayoutEffect(() => {
-    const { width, height } = getRect(ref);
-    dispatch({
-      type: "set-size",
-      width, height
-    });
+  React.useEffect(() => {
+    doSetSize();
   });
 
   return size;
