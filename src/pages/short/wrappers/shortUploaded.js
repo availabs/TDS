@@ -12,12 +12,12 @@ const shortUploaded = Component => {
   const Wrapper = ({ falcor, falcorCache, getUsers, users, ...props }) => {
 
     const [loading, _setLoading] = React.useState(false),
-      setLoading = useAsyncSafe(_setLoading)
+      setLoading = useAsyncSafe(_setLoading);
+
+    const [uploadId, setUploadId] = React.useState(null);
 
     React.useEffect(() => {
-
       setLoading(true);
-
       getUsers();
       falcor.get(["tds", "meta", "upload", "length"])
         .then(res => {
@@ -25,12 +25,32 @@ const shortUploaded = Component => {
           if (length) {
             return falcor.get([
               "tds", "meta", "upload", "byIndex", { from: 0, to: length - 1 },
-              ["created_by", "created_at", "status", "meta"]
+              ["upload_id", "created_by", "created_at", "status", "meta"]
             ])
           }
         })
         .then(() => setLoading(false));
     }, [getUsers, falcor, setLoading]);
+
+    React.useEffect(() => {
+      if (!uploadId) return;
+
+      setLoading(true);
+      falcor.get(["tds", "count", "upload", "byUploadId", uploadId, "length"])
+        .then(res => {
+          const length = +get(res, ["json", "tds", "count", "upload",
+                                "byUploadId", uploadId, "length"], 0);
+          if (length) {
+            return falcor.get(
+              ["tds", "count", "upload", "byUploadId", uploadId,
+                "byIndex", { from: 0, to: length - 1},
+                ['count_id', 'count_type', 'upload_id', 'status']
+              ]
+            )
+          }
+        })
+        .then(() => setLoading(false));
+    }, [falcor, setLoading, uploadId]);
 
     const uploads = React.useMemo(() => {
       const uploads = [];
@@ -53,9 +73,29 @@ const shortUploaded = Component => {
       return uploads;
     }, [falcorCache, users]);
 
+    const counts = React.useMemo(() => {
+      const length = +get(falcorCache,
+        ["tds", "count", "upload", "byUploadId", uploadId, "length"], 0
+      );
+      if (!(uploadId && length)) return [];
+
+      const counts = [];
+      for (let i = 0; i < length; ++i) {
+        const ref = get(falcorCache,
+            ["tds", "count", "upload", "byUploadId", uploadId, "byIndex", i, "value"]
+          ),
+          count = get(falcorCache, ref, null);
+        if (count) {
+          counts.push(count);
+        }
+      }
+      return counts;
+    }, [falcorCache, uploadId]);
+
     return (
       <Component { ...props } uploads={ uploads } users={ users }
-        loading={ loading }/>
+        loading={ loading } counts={ counts }
+        setUploadId={ setUploadId }/>
     )
   }
   const mapStateToProps = state => ({

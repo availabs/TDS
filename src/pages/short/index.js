@@ -9,6 +9,9 @@ import ShortUploader from "./ShortUploader"
 import UploadedShorts from "./UploadedShorts"
 import shortUploaded from "./wrappers/shortUploaded"
 
+import ShortCount from "./ShortCount"
+import shortCount from "./wrappers/shortCount"
+
 const Station = {
   path: "/short/station/:stationId",
   // mainNav: true,
@@ -79,6 +82,30 @@ const Uploaded = {
   }
 }
 
+const Count = {
+  path: "/short/count/:count_id",
+  mainNav: false,
+  name: "Short Count",
+  exact: true,
+  // authLevel: 0,
+  layoutSettings: {
+    fixed: true,
+    navBar: 'side',
+    headerBar: {
+      title: "Uploaded Count"
+    }
+  },
+  component: {
+    type: ShortCount,
+    wrappers: [
+      "show-loading",
+      shortCount,
+      "avl-falcor",
+      "with-auth"
+    ]
+  }
+}
+
 const Uploader = {
   path: "/short/uploader",
   mainNav: true,
@@ -107,6 +134,7 @@ const routes = [
   Uploader,
   Uploaded,
   Station,
+  Count,
   Short
 ];
 export default routes;

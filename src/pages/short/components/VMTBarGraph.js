@@ -2,8 +2,6 @@ import React from "react"
 
 import { format as d3format } from "d3"
 
-import { useTheme } from "@availabs/avl-components"
-
 import { getColorRange } from "avl-components"
 
 import { BarGraph } from "avl-graph/src"
@@ -31,7 +29,7 @@ const VMTBarGraph = ({ data }) => (
       flex justify-center items-center
       bg-blueGray-800 rounded-lg w-full h-full
     ` }>
-    <BarGraph theme={ useTheme() }
+    <BarGraph
       data={ data } keys={ Classes }
       margin={ { left: 130, bottom: 50 } }
       colors={ Colors }

@@ -67,7 +67,7 @@ const StationsTable = ({ stations }) => {
   const history = useHistory();
 
   const onRowClick = React.useCallback((e, row) => {
-    history.push(`short/station/${ row.values.stationId }`);
+    history.push(`/short/station/${ row.values.stationId }`);
   }, [history]);
 
   const theme = useTheme();
