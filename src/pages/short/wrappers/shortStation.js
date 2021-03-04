@@ -5,7 +5,7 @@ import { useParams } from "react-router-dom"
 import get from "lodash.get"
 import { format as d3format } from "d3"
 
-import { YEARS, REGIONS } from "./short"
+import { YEARS, REGIONS } from "./utils"
 
 import { useAsyncSafe } from "avl-components"
 

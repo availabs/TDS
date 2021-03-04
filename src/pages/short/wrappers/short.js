@@ -6,13 +6,7 @@ import get from "lodash.get"
 
 import { useAsyncSafe } from "avl-components"
 
-export const REGIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
-export const CLASSES = [
-     1,  2,  4,  6,  7,  8,  9,
-    11, 12, 14, 16, 17, 18, 19
-  ];
-
-export const YEARS = [2019, 2018, 2017, 2016];
+import { REGIONS, CLASSES, YEARS } from "./utils"
 
 const shortWrapper = Component =>
   ({ falcor, falcorCache, ...props }) => {

@@ -9,8 +9,14 @@ import ShortUploader from "./ShortUploader"
 import UploadedShorts from "./UploadedShorts"
 import shortUploaded from "./wrappers/shortUploaded"
 
-import ShortCount from "./ShortCount"
-import shortCount from "./wrappers/shortCount"
+import ShortCountVolume from "./ShortCountVolume"
+import shortCountVolume from "./wrappers/shortCountVolume"
+
+import ShortCountSpeed from "./ShortCountSpeed"
+import shortCountSpeed from "./wrappers/shortCountSpeed"
+
+import ShortCountClass from "./ShortCountClass"
+import shortCountClass from "./wrappers/shortCountClass"
 
 const Station = {
   path: "/short/station/:stationId",
@@ -82,24 +88,70 @@ const Uploaded = {
   }
 }
 
-const Count = {
-  path: "/short/count/:count_id",
+const VolumeCount = {
+  path: "/short/volume/count/:count_id",
   mainNav: false,
-  name: "Short Count",
+  name: "Short Count Volume",
   exact: true,
   // authLevel: 0,
   layoutSettings: {
     fixed: true,
     navBar: 'side',
     headerBar: {
-      title: "Uploaded Count"
+      title: "Short Count Volume"
     }
   },
   component: {
-    type: ShortCount,
+    type: ShortCountVolume,
     wrappers: [
       "show-loading",
-      shortCount,
+      shortCountVolume,
+      "avl-falcor",
+      "with-auth"
+    ]
+  }
+}
+const SpeedCount = {
+  path: "/short/speed/count/:count_id",
+  mainNav: false,
+  name: "Short Count Speed",
+  exact: true,
+  // authLevel: 0,
+  layoutSettings: {
+    fixed: true,
+    navBar: 'side',
+    headerBar: {
+      title: "Short Count Speed"
+    }
+  },
+  component: {
+    type: ShortCountSpeed,
+    wrappers: [
+      "show-loading",
+      shortCountSpeed,
+      "avl-falcor",
+      "with-auth"
+    ]
+  }
+}
+const ClassCount = {
+  path: "/short/class/count/:count_id",
+  mainNav: false,
+  name: "Short Count Class",
+  exact: true,
+  // authLevel: 0,
+  layoutSettings: {
+    fixed: true,
+    navBar: 'side',
+    headerBar: {
+      title: "Short Count Class"
+    }
+  },
+  component: {
+    type: ShortCountClass,
+    wrappers: [
+      "show-loading",
+      shortCountClass,
       "avl-falcor",
       "with-auth"
     ]
@@ -134,7 +186,9 @@ const routes = [
   Uploader,
   Uploaded,
   Station,
-  Count,
+  VolumeCount,
+  SpeedCount,
+  ClassCount,
   Short
 ];
 export default routes;

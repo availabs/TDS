@@ -6,11 +6,11 @@ import get from "lodash.get"
 
 import { useAsyncSafe } from "avl-components"
 
-import { REGIONS } from "./short"
+import { REGIONS, GLOBAL_ATTRIBUTES } from "./utils"
 
-const basePath = ["tds", "count", "data", "byCountId"]
+const basePath = ["tds", "short", "class", "count", "data", "byCountId"];
 
-const shortCount = Component =>
+const shortCountSpeed = Component =>
   ({ falcor, falcorCache, ...props }) => {
     const { count_id } = useParams();
 
@@ -29,7 +29,7 @@ const shortCount = Component =>
           if (length) {
             return falcor.get(
               [...basePath, count_id, "byIndex", { from: 0, to: length - 1 },
-                ["id", "date", "intervals", "count_id", "station_id", "region"]
+                [...GLOBAL_ATTRIBUTES, "classes", "data_interval"]
               ]
             )
           }
@@ -46,19 +46,20 @@ const shortCount = Component =>
           if (data) {
             counts.push({
               ...data,
-              intervals: get(data, ["intervals", "value"], []),
-              total: get(data, ["intervals", "value"], []).reduce((a, c) => a + +c, 0),
-              region: get(falcorCache, ["hds", "regions", "byId", data.region, "name"], data.region)
+              sortBy: +get(data, "date", "0").replace(/[-]/g, ""),
+              classes: get(data, ["classes", "value"], []),
+              total: get(data, ["classes", "value"], []).reduce((a, c) => a + +c, 0),
+              region: get(falcorCache, ["hds", "regions", "byId", data.region_code, "name"], data.region_code)
             })
           }
         }
       }
       return counts;
-    }, [count_id, falcorCache])
+    }, [count_id, falcorCache]);
 
     return (
-      <Component { ...props } count_id={ count_id } counts={ counts }
-        loading={ loading }/>
+      <Component { ...props } count_id={ count_id }
+        counts={ counts } loading={ loading }/>
     )
   }
-export default shortCount;
+export default shortCountSpeed;

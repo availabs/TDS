@@ -1,8 +1,16 @@
 console.log("WORKER LOADED!!!");
 
+import { SC_CLASS_HEADERS, SC_SPEED_HEADERS, SC_VOLUME_HEADERS } from "/js/headers.js"
+
 const RowLengths = {
-  "122": "Short Volume",
-  "41": "Short Class"
+  "122": "short volume",
+  "41": "short class",
+  "43": "short speed"
+}
+const RowHeaders = {
+  "122": SC_VOLUME_HEADERS,
+  "41": SC_CLASS_HEADERS,
+  "43": SC_SPEED_HEADERS
 }
 
 let processedFiles = [];
@@ -124,6 +132,13 @@ const handleDroppedFile = async droppedFile => {
   return result;
 }
 
+const checkHeaders = (row, headers) => {
+  for (let i = 0; i < headers.length; ++i) {
+    if (row[0] !== headers[0]) return false;
+  }
+  return true;
+}
+
 const PromiseReader = file => {
   return new Promise(resolve => {
     const fr = new FileReader();
@@ -144,16 +159,20 @@ const PromiseReader = file => {
       });
     };
     fr.onload = loaded => {
-      const rawData = loaded.target.result,
-        data = rawData.trim().split(/[\n]+/)
-          .map(row => row.trim().split(/[,]/).map(r => r.trim()));
+      const rawData = loaded.target.result;
 
-      let len = data[0].length;
+      let data = rawData.trim().split(/[\n]+/)
+        .map(row => row.trim().split(/[,]/).map(r => r.trim()));
+
+      const len = data[0].length;
 
       const fileOK = data.reduce((a, c, i) => {
-        if (i === 0) return a;
         return a && (c.length in RowLengths) && (len === c.length);
-      }, true);
+      }, true) && checkHeaders(data[0], RowHeaders[len]);
+
+      if (checkHeaders(data[data.length - 1], RowHeaders[len])) {
+        data = data.slice(0, data.length - 1);
+      }
 
       if (!fileOK) {
         resolve({
