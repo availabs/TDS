@@ -35,7 +35,7 @@ const CountMeta = ({ counts, date, dir }) => {
   return (
     <div>
       <div className="text-2xl font-bold flex">
-        <ValueDisplay label="Station ID" className="flex mr-8"
+        <ValueDisplay label="RC Station ID" className="flex mr-8"
           value={ rc_station }/>
         Federal Direction: { FED_DIRS[dir] }
       </div>
@@ -43,18 +43,18 @@ const CountMeta = ({ counts, date, dir }) => {
       <div className="border"/>
 
       <div className="flex flex-wrap mt-2">
-        <ValueDisplay label="County Code"
-          value={ county_code }/>
         <ValueDisplay label="Region Code"
           value={ region_code }/>
+        <ValueDisplay label="County Code"
+          value={ county_code }/>
+        <ValueDisplay label="Factor Group"
+          value={ factor_group }/>
         <ValueDisplay label="Speed Limit"
           value={ speed_limit }/>
         <ValueDisplay label="Vehicle Axle Code"
           value={ vehicle_axle_code }/>
         <ValueDisplay label="Functional Class"
           value={ functional_class }/>
-        <ValueDisplay label="Factor Group"
-          value={ factor_group }/>
         <ValueDisplay label="Specific Recorder Placement"
           value={ specific_recorder_placement }/>
         <ValueDisplay label="Channel Notes"
@@ -67,7 +67,7 @@ const CountMeta = ({ counts, date, dir }) => {
 }
 export default CountMeta
 
-const ValueDisplay = ({ label, value, ...props }) => {
+export const ValueDisplay = ({ label, value, ...props }) => {
   const theme = useTheme();
   return !hasValue(value) ? null : (
     <div className={ `

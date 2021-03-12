@@ -23,7 +23,8 @@ const shortCountVolume = Component =>
 
     React.useEffect(() => {
       setLoading(true);
-      falcor.get([...basePath, count_id, "length"])
+      falcor.get(["tds", "short", "volume", "weeklyAvg", "byCountId", count_id, "array"])
+        .then(() => falcor.get([...basePath, count_id, "length"]))
         .then(res => {
           const length = +get(res, ["json", ...basePath, count_id, "length"], 0);
           if (length) {
@@ -60,11 +61,16 @@ const shortCountVolume = Component =>
         }
       }
       return counts;
-    }, [count_id, falcorCache])
+    }, [count_id, falcorCache]);
+
+    const weeklyAvg = React.useMemo(() => {
+      return get(falcorCache, ["tds", "short", "volume", "weeklyAvg", "byCountId", count_id, "array", "value"], []);
+    }, [count_id, falcorCache]);
 
     return (
       <Component { ...props } count_id={ count_id }
-        counts={ counts } loading={ loading }/>
+        counts={ counts } loading={ loading }
+        weeklyAvg={ weeklyAvg }/>
     )
   }
 export default shortCountVolume;

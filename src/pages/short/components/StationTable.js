@@ -6,7 +6,7 @@ import { format as d3format } from "d3-format"
 
 const intFormat = d3format(",d");
 
-const Columns = [
+const COLUMNS = [
   // { accessor: "stationId",
   //   Header: "Station ID"
   // },
@@ -92,7 +92,7 @@ const StationsTable = ({ station }) => {
   const theme = useTheme();
   return !station.length ? null : (
     <div className={ `${ theme.headerBg } rounded-md pb-6` }>
-      <Table columns={ Columns }
+      <Table columns={ COLUMNS }
         initialPageSize={ 15 }
         ExpandRow={ ExpandRow }
         data={

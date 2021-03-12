@@ -15,7 +15,7 @@ const ValueCell = ({ value }) =>
     { floatFormat(value) }
   </div>
 
-const Columns = [
+const COLUMNS = [
   { accessor: "functional_class",
     Header: "Functional Class",
     Cell: ({ value }) =>
@@ -41,7 +41,7 @@ const ClassTable = ({ fClassData }) => {
   return !fClassData.length ? null : (
     <div className={ `${ theme.headerBg } rounded-md pb-4` }>
       <Table initialPageSize={ 14 }
-        columns={ Columns }
+        columns={ COLUMNS }
         sortBy="functional_class" sortOrder="asc"
         data={ fClassData }/>
     </div>

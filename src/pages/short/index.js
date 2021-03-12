@@ -18,6 +18,9 @@ import shortCountSpeed from "./wrappers/shortCountSpeed"
 import ShortCountClass from "./ShortCountClass"
 import shortCountClass from "./wrappers/shortCountClass"
 
+import AdjustmentFactors from "./AdjustmentFactors"
+import adjustmentFactors from "./wrappers/adjustmentFactors"
+
 const Station = {
   path: "/short/station/:stationId",
   // mainNav: true,
@@ -182,13 +185,38 @@ const Uploader = {
   }
 }
 
+const Factors = {
+  path: "/factors",
+  mainNav: true,
+  name: "Adjustment Factors",
+  exact: true,
+  // authLevel: 0,
+  layoutSettings: {
+    fixed: true,
+    navBar: 'side',
+    headerBar: {
+      title: "Adjustment Factors"
+    }
+  },
+  component: {
+    type: AdjustmentFactors,
+    wrappers: [
+      "show-loading",
+      adjustmentFactors,
+      "avl-falcor",
+      "with-auth"
+    ]
+  }
+}
+
 const routes = [
+  Short,
   Uploader,
   Uploaded,
   Station,
   VolumeCount,
   SpeedCount,
   ClassCount,
-  Short
+  Factors
 ];
 export default routes;

@@ -11,9 +11,9 @@ import CountMeta from "./components/CountMeta"
 
 import { COLORS, BINS, SPEED_BINS, dataIntervalToTime } from "./wrappers/utils"
 
-const Columns = [
-  { accessor: "station_id",
-    Header: "Station ID"
+const COLUMNS = [
+  { accessor: "rc_station",
+    Header: "RC Station ID"
   },
   { accessor: "date",
     Header: "Date",
@@ -130,7 +130,7 @@ const ShortCountSpeed = ({ count_id, counts }) => {
         ))
       }
       <Table data={ counts }
-        columns={ Columns }
+        columns={ COLUMNS }
         sortBy="total"
         sortOrder="desc"/>
 
