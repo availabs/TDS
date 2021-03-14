@@ -8,6 +8,7 @@ import { MAPBOX_TOKEN } from "config.private"
 
 import { TestCountyLayerFactory } from "./layers/TestCountyLayer"
 import { TestCousubLayerFactory } from "./layers/TestCousubLayer"
+import { RisLayerFactory } from "./layers/RISLayer"
 
 const Map = ({ mapOptions, layers, falcor }) => {
 
@@ -22,34 +23,24 @@ const Map = ({ mapOptions, layers, falcor }) => {
   }, [falcor]);
 
   return (
-    <AvlMap accessToken={ MAPBOX_TOKEN }
+    <AvlMap 
+      accessToken={ MAPBOX_TOKEN }
       mapOptions={ mapOptions }
       layers={ layers }
       sidebar={ {
         title: "Map Test",
-        tabs: ["layers", "styles",
-          { icon: "fa-cog",
-            Component: CustomTab
-          }
-        ]
+        tabs: ["layers", "styles"],
+        open: false
       } }/>
   )
 }
 
-const CustomTab = props => {
-  return (
-    <div className={ `bg-blueGray-800 p-1 rounded` }>
-      <div className={ `bg-blueGray-700 p-1 rounded` }>
-        SOME STUFF HERE!!!!
-      </div>
-    </div>
-  )
-}
+
 
 const MapPage = {
-  path: "/maptest",
-  mainNav: false,
-  name: "Map Test",
+  path: "/map",
+  mainNav: true,
+  name: "Traffic Data Map",
   exact: true,
   // authLevel: 0,
   layoutSettings: {
@@ -61,11 +52,10 @@ const MapPage = {
     type: Map,
     props: {
       mapOptions: {
-        zoom: 9
+        zoom: 6.6
       },
       layers: [
-        TestCousubLayerFactory(),
-        TestCountyLayerFactory()
+        RisLayerFactory()
       ]
     },
     wrappers: [

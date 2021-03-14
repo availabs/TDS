@@ -21,13 +21,13 @@ import MapAction from "./components/MapAction"
 
 export const DefaultStyles = [
   { name: "Dark",
-    style: "mapbox://styles/am3081/cjqqukuqs29222sqwaabcjy29" },
+    style: 'mapbox://styles/am3081/ckm85o7hq6d8817nr0y6ute5v' },
   { name: "Light",
-    style: 'mapbox://styles/am3081/cjms1pdzt10gt2skn0c6n75te' },
+    style: 'mapbox://styles/am3081/ckm86j4bw11tj18o5zf8y9pou' },
   { name: "Satellite",
     style: 'mapbox://styles/am3081/cjya6wla3011q1ct52qjcatxg' },
   { name: "Satellite Streets",
-    style: `mapbox://styles/am3081/cjya70364016g1cpmbetipc8u` }
+    style: 'mapbox://styles/am3081/cjya70364016g1cpmbetipc8u' }
 ]
 
 const DefaultMapOptions = {

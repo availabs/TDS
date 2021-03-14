@@ -7,6 +7,7 @@ import Continuous from "pages/continuous"
 import Short from "pages/short"
 
 import MapPage from "pages/map"
+import TrafficDataMap from "pages/map/TrafficDataMap"
 
 const Routes = [
   Landing,
@@ -14,6 +15,7 @@ const Routes = [
   ...Continuous,
   ...Short,
   ...MapPage,
+  ...TrafficDataMap,
   NoMatch
 ]
 

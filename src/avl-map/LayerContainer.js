@@ -78,7 +78,7 @@ class LayerContainer {
     });
     this.layers.forEach(layer => {
       if (!mapboxMap.getLayer(layer.id)) {
-        mapboxMap.addLayer(layer);
+        mapboxMap.addLayer(layer,layer.beneath);
         if (!this.isVisible) {
           this._setVisibilityNone(mapboxMap, layer.id);
         }
