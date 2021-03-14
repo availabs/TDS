@@ -34,10 +34,13 @@ const CountMeta = ({ counts, date, dir }) => {
 
   return (
     <div>
-      <div className="text-2xl font-bold flex">
-        <ValueDisplay label="RC Station ID" className="flex mr-8"
-          value={ rc_station }/>
-        Federal Direction: { FED_DIRS[dir] }
+      <div className="text-2xl font-bold flex items-end">
+        <div className="mr-4 text-3xl">
+          RC Station ID: { rc_station }
+        </div>
+        <div>
+          Federal Direction: { FED_DIRS[dir] }
+        </div>
       </div>
 
       <div className="border"/>
@@ -67,17 +70,20 @@ const CountMeta = ({ counts, date, dir }) => {
 }
 export default CountMeta
 
-export const ValueDisplay = ({ label, value, ...props }) => {
+export const ValueDisplay = ({ label, value, className = "", ...props }) => {
   const theme = useTheme();
   return !hasValue(value) ? null : (
     <div className={ `
-      flex mr-2 ${ theme.accent2 } px-4 py-1 rounded mb-2
+      ${ className } mr-2 ${ theme.accent2 } px-4 py-1 rounded mb-2
     ` } { ...props }>
-      <span className="font-bold mr-2">{ label }:</span>
-      { value.map((v, i) => (
-          <div key={ i }>{ v }</div>
-        ))
-      }
+      <div className="flex">
+        <span className="font-bold mr-2">{ label }:</span>
+        { (Array.isArray(value) ? value : [value])
+            .map((v, i) => (
+              <div key={ i }>{ v }</div>
+            ))
+        }
+      </div>
     </div>
   )
 }

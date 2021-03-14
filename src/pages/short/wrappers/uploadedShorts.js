@@ -8,7 +8,7 @@ import { getUsers } from "@availabs/ams"
 
 import { useAsyncSafe } from "avl-components"
 
-const shortUploaded = Component => {
+const uploadedShorts = Component => {
   const Wrapper = ({ falcor, falcorCache, getUsers, users, ...props }) => {
 
     const [loading, _setLoading] = React.useState(false),
@@ -44,9 +44,9 @@ const shortUploaded = Component => {
             return falcor.get(
               ["tds", countType, dataType, "count", "upload", "byUploadId", uploadId,
                 "byIndex", { from: 0, to: length - 1},
-                ['count_id', 'count_type', 'data_type', 'upload_id', 'status']
+                ['id', 'count_id', 'count_type', 'data_type', 'upload_id', 'status']
               ]
-            )
+            ).then(res => console.log("RES:", res))
           }
         })
         .then(() => setLoading(false));
@@ -103,4 +103,4 @@ const shortUploaded = Component => {
   });
   return connect(mapStateToProps, { getUsers })(Wrapper);
 }
-export default shortUploaded
+export default uploadedShorts

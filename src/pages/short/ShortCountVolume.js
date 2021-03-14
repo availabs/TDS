@@ -1,7 +1,6 @@
 import React from "react"
 
 import { format as d3format, rollups, group } from "d3"
-import get from "lodash.get"
 
 import { Table } from "@availabs/avl-components"
 
@@ -9,12 +8,19 @@ import { LineGraph, BarGraph } from "avl-graph/src"
 
 import CountMeta from "./components/CountMeta"
 
-import { COLORS, FED_DIRS } from "./wrappers/utils"
+import { COLORS, FED_DIRS, INTERVALS, WEEKDAYS } from "./wrappers/utils"
 
 import { ValueDisplay } from "./components/CountMeta"
+import DataChart from "./components/DataChart"
+import CountStatus from "./components/CountStatus"
 
 const yFormat = d3format(",d"),
-  idFormat = (id, { date }) => date;
+  idFormat = (id, { date, dow }) => {
+    return `${ date } (${ WEEKDAYS[dow] })`;
+  },
+
+  keyFormat = d => FED_DIRS[d],
+  indexFormat = i => intervalToTime(i - 1);
 
 const COLUMNS = [
   { accessor: "rc_station",
@@ -49,6 +55,7 @@ const intervalToTime = (i, mod = 1) => {
 const groupReducer = group => group.map(c => ({
   id: c.id,
   date: c.date,
+  dow: new Date(c.date).getUTCDay(),
   sortBy: +c.date.replace(/[-]/g, ""),
   data: c.intervals.map((v, i) => ({
     x: intervalToTime(i, +c.collection_interval === 60 ? 1 : 4),
@@ -56,7 +63,7 @@ const groupReducer = group => group.map(c => ({
   }))
 })).sort((a, b) => a.sortBy - b.sortBy)
 
-const ShortCountVolume = ({ count_id, counts, weeklyAvg }) => {
+const ShortCountVolume = ({ count_id, counts, weeklyAvg, user, meta, updateMeta }) => {
 
   const grouped = React.useMemo(() => {
     return group(counts, d => d.federal_direction);
@@ -85,10 +92,17 @@ const ShortCountVolume = ({ count_id, counts, weeklyAvg }) => {
   return (
     <div className="m-10 grid grid-cols-1 gap-y-6">
       <div className="text-5xl font-bold">
-        Count ID: { count_id }
+        <div className="mb-2">Count ID: { count_id }</div>
+        { user.authLevel < 5 ? null :
+          <>
+            <div className="border rounded-sm"/>
+            <div className="text-base font-normal mt-2">
+              <CountStatus { ...meta } updateMeta={ updateMeta }/>
+            </div>
+          </>
+        }
+        <div className="border-2 rounded-sm"/>
       </div>
-
-      <div className="border-2 rounded-sm"/>
 
       { lineData.map(([dir, data]) => (
           <div key={ dir }>
@@ -111,6 +125,9 @@ const ShortCountVolume = ({ count_id, counts, weeklyAvg }) => {
                   format: yFormat
                 } }/>
             </div>
+            { user.authLevel < 5 ? null :
+              <VolumeDataTable counts={ grouped.get(dir) }/>
+            }
           </div>
         ))
       }
@@ -147,14 +164,14 @@ const ShortCountVolume = ({ count_id, counts, weeklyAvg }) => {
               padding={ 0.25 }
               groupMode="grouped"
               hoverComp={ {
-                keyFormat: d => FED_DIRS[d],
+                keyFormat,
                 valueFormat: yFormat,
-                indexFormat: i => intervalToTime(i - 1)
+                indexFormat
               } }
               axisBottom={ {
                 label: "Intervals",
                 tickDensity: 1.5,
-                format: i => intervalToTime(i - 1)
+                format: indexFormat
               } }
               axisLeft={ {
                 label: "Counts",
@@ -163,6 +180,7 @@ const ShortCountVolume = ({ count_id, counts, weeklyAvg }) => {
           </div>
         }
       </div>
+
       <Table data={ counts }
         columns={ COLUMNS }
         sortBy="total"
@@ -171,3 +189,28 @@ const ShortCountVolume = ({ count_id, counts, weeklyAvg }) => {
   )
 }
 export default ShortCountVolume;
+
+const VolumeDataTable = ({ counts }) => {
+  const data = React.useMemo(() => {
+    return counts.map(cnt => {
+      const data = {
+        id: cnt.id,
+        date: cnt.date,
+        dow: new Date(cnt.date).getUTCDay(),
+        data: [...INTERVALS]
+      }
+      const mod = cnt.collection_interval === 15 ? 4 : 1;
+      cnt.intervals.forEach((d, i) => {
+        const interval = Math.floor(i / mod);
+        data.data[interval] += d;
+      })
+      return data;
+    }).sort((a, b) => a.date.localeCompare(b.date))
+  }, [counts]);
+
+  return (
+    <div className="mt-2">
+      <DataChart data={ data }/>
+    </div>
+  )
+}

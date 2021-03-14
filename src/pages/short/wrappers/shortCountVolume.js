@@ -12,7 +12,7 @@ const basePath = ["tds", "short", "volume", "count", "data", "byCountId"];
 
 const shortCountVolume = Component =>
   ({ falcor, falcorCache, ...props }) => {
-    const { count_id } = useParams();
+    const { metaId } = useParams();
 
     const [loading, _setLoading] = React.useState(false),
       setLoading = useAsyncSafe(_setLoading);
@@ -23,28 +23,48 @@ const shortCountVolume = Component =>
 
     React.useEffect(() => {
       setLoading(true);
-      falcor.get(["tds", "short", "volume", "weeklyAvg", "byCountId", count_id, "array"])
-        .then(() => falcor.get([...basePath, count_id, "length"]))
-        .then(res => {
-          const length = +get(res, ["json", ...basePath, count_id, "length"], 0);
-          if (length) {
-            return falcor.get(
-              [...basePath, count_id, "byIndex", { from: 0, to: length - 1 },
-                [...GLOBAL_ATTRIBUTES, "intervals", "vehicle_axle_code"]
-              ]
-            )
-          }
-        }).then(() => setLoading(false))
-    }, [falcor, count_id, setLoading]);
+      falcor.get([
+        "tds", "count", "meta", "byId", metaId,
+        ["id", "metaId", "upload_id", "status", "type", "date",
+          "rc_station", "functional_class", "region_code", "county_code"
+        ]
+      ]).then(() =>
+       falcor.get(["tds", "short", "volume", "weeklyAvg", "byCountId", metaId, "array"])
+          .then(() => falcor.get([...basePath, metaId, "length"]))
+          .then(res => {
+            const length = +get(res, ["json", ...basePath, metaId, "length"], 0);
+            if (length) {
+              return falcor.get(
+                [...basePath, metaId, "byIndex", { from: 0, to: length - 1 },
+                  [...GLOBAL_ATTRIBUTES, "intervals", "vehicle_axle_code"]
+                ]
+              )
+            }
+          })
+      ).then(() => setLoading(false))
+    }, [falcor, metaId, setLoading]);
 
-    const counts = React.useMemo(() => {
-      const counts = [];
-      const length = +get(falcorCache, [...basePath, count_id, "length"], 0);
+    const updateMeta = React.useCallback((id, status) => {
+      setLoading(true);
+      falcor.call(["tds", "update", "count", "meta", "status"], [[id, status]])
+        .then(() => setLoading(false));
+    }, [falcor, setLoading]);
+
+    const meta = React.useMemo(() => {
+      return get(falcorCache, ["tds", "count", "meta", "byId", metaId])
+    }, [metaId, falcorCache]);
+
+    const [counts, count_id] = React.useMemo(() => {
+      const counts = [],
+        length = +get(falcorCache, [...basePath, metaId, "length"], 0);
+      let count_id = null;
+
       if (length) {
         for (let i = 0; i < length; ++i) {
-          const ref = get(falcorCache, [...basePath, count_id, "byIndex", i, "value"]),
+          const ref = get(falcorCache, [...basePath, metaId, "byIndex", i, "value"]),
             data = get(falcorCache, ref, null);
           if (data) {
+            count_id = data.count_id;
             counts.push({
               ...data,
               intervals: get(data, ["intervals", "value"], [])
@@ -60,15 +80,16 @@ const shortCountVolume = Component =>
           }
         }
       }
-      return counts;
-    }, [count_id, falcorCache]);
+      return [counts, count_id];
+    }, [metaId, falcorCache]);
 
     const weeklyAvg = React.useMemo(() => {
-      return get(falcorCache, ["tds", "short", "volume", "weeklyAvg", "byCountId", count_id, "array", "value"], []);
-    }, [count_id, falcorCache]);
+      return get(falcorCache, ["tds", "short", "volume", "weeklyAvg", "byCountId", metaId, "array", "value"], []);
+    }, [metaId, falcorCache]);
 
     return (
       <Component { ...props } count_id={ count_id }
+        meta={ meta } updateMeta={ updateMeta }
         counts={ counts } loading={ loading }
         weeklyAvg={ weeklyAvg }/>
     )

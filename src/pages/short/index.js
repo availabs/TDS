@@ -7,7 +7,7 @@ import shortStation from "./wrappers/shortStation"
 import ShortUploader from "./ShortUploader"
 
 import UploadedShorts from "./UploadedShorts"
-import shortUploaded from "./wrappers/shortUploaded"
+import uploadedShorts from "./wrappers/uploadedShorts"
 
 import ShortCountVolume from "./ShortCountVolume"
 import shortCountVolume from "./wrappers/shortCountVolume"
@@ -21,12 +21,15 @@ import shortCountClass from "./wrappers/shortCountClass"
 import AdjustmentFactors from "./AdjustmentFactors"
 import adjustmentFactors from "./wrappers/adjustmentFactors"
 
+import CountsMeta from "./CountsMeta"
+import countsMeta from "./wrappers/countsMeta"
+
 const Station = {
   path: "/short/station/:stationId",
   // mainNav: true,
   name: "Short Counts",
   exact: true,
-  // authLevel: 0,
+  authLevel: 0,
   layoutSettings: {
     fixed: true,
     navBar: 'side',
@@ -49,7 +52,7 @@ const Short = {
   mainNav: true,
   name: "Short Counts",
   exact: true,
-  // authLevel: 0,
+  authLevel: 0,
   layoutSettings: {
     fixed: true,
     navBar: 'side',
@@ -72,7 +75,7 @@ const Uploaded = {
   mainNav: true,
   name: "Uploaded Shorts",
   exact: true,
-  // authLevel: 0,
+  authLevel: 0,
   layoutSettings: {
     fixed: true,
     navBar: 'side',
@@ -84,7 +87,7 @@ const Uploaded = {
     type: UploadedShorts,
     wrappers: [
       "show-loading",
-      shortUploaded,
+      uploadedShorts,
       "avl-falcor",
       "with-auth"
     ]
@@ -92,11 +95,11 @@ const Uploaded = {
 }
 
 const VolumeCount = {
-  path: "/short/volume/count/:count_id",
+  path: "/short/volume/count/:metaId",
   mainNav: false,
   name: "Short Count Volume",
   exact: true,
-  // authLevel: 0,
+  authLevel: 0,
   layoutSettings: {
     fixed: true,
     navBar: 'side',
@@ -115,11 +118,11 @@ const VolumeCount = {
   }
 }
 const SpeedCount = {
-  path: "/short/speed/count/:count_id",
+  path: "/short/speed/count/:metaId",
   mainNav: false,
   name: "Short Count Speed",
   exact: true,
-  // authLevel: 0,
+  authLevel: 0,
   layoutSettings: {
     fixed: true,
     navBar: 'side',
@@ -138,11 +141,11 @@ const SpeedCount = {
   }
 }
 const ClassCount = {
-  path: "/short/class/count/:count_id",
+  path: "/short/class/count/:metaId",
   mainNav: false,
   name: "Short Count Class",
   exact: true,
-  // authLevel: 0,
+  authLevel: 0,
   layoutSettings: {
     fixed: true,
     navBar: 'side',
@@ -166,7 +169,7 @@ const Uploader = {
   mainNav: true,
   name: "Short Uploader",
   exact: true,
-  // authLevel: 0,
+  authLevel: 5,
   layoutSettings: {
     fixed: true,
     navBar: 'side',
@@ -190,7 +193,7 @@ const Factors = {
   mainNav: true,
   name: "Adjustment Factors",
   exact: true,
-  // authLevel: 0,
+  authLevel: 0,
   layoutSettings: {
     fixed: true,
     navBar: 'side',
@@ -209,14 +212,43 @@ const Factors = {
   }
 }
 
+const Counts = {
+  path: "/counts",
+  mainNav: true,
+  name: "Counts Meta",
+  exact: true,
+  authLevel: 0,
+  layoutSettings: {
+    fixed: true,
+    navBar: 'side',
+    headerBar: {
+      title: "Counts Meta"
+    }
+  },
+  component: {
+    type: CountsMeta,
+    wrappers: [
+      "show-loading",
+      countsMeta,
+      "avl-falcor",
+      "with-auth"
+    ]
+  }
+}
+
 const routes = [
   Short,
+
+  Station,
+
   Uploader,
   Uploaded,
-  Station,
+  Counts,
+
   VolumeCount,
   SpeedCount,
   ClassCount,
+
   Factors
 ];
 export default routes;

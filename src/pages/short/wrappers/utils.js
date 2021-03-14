@@ -10,9 +10,9 @@ export const COLORS = colors1.reduce((a, c, i) => {
 
 export const REGIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 export const CLASSES = [
-     1,  2,  4,  6,  7,  8,  9,
-    11, 12, 14, 16, 17, 18, 19
-  ];
+   1,  2,  4,  6,  7,  8,  9,
+  11, 12, 14, 16, 17, 18, 19
+];
 
 export const YEARS = [2019, 2018, 2017, 2016];
 
@@ -76,3 +76,9 @@ export const GLOBAL_ATTRIBUTES = [
   "date",
   "collection_interval"
 ]
+
+export const INTERVALS = new Array(24);
+for (let i = 0; i < 24; ++i) {
+  INTERVALS[i] = 0;
+}
+export const WEEKDAYS = ["Sn", "Mn", "Tu", "We", "Th", "Fr", "St"]

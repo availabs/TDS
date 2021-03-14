@@ -37,9 +37,6 @@ const CountColumns = [
   },
   { accessor: "status",
     Header: "Status"
-  },
-  { accessor: "upload_id",
-    Header: "Upload ID"
   }
 ]
 
@@ -52,7 +49,7 @@ const UploadedShorts = ({ uploads, counts, setUploadId, ...props }) => {
   const { push } = useHistory();
 
   const onRowClick = React.useCallback((e, row) => {
-    push(`/short/${ row.original.data_type }/count/${ row.values.count_id }`);
+    push(`/short/${ row.original.data_type }/count/${ row.original.id }`);
   }, [push]);
 
   return (

@@ -9,7 +9,11 @@ import { BarGraph } from "avl-graph/src"
 
 import CountMeta from "./components/CountMeta"
 
-import { COLORS, VEHICLE_CLASSES, dataIntervalToTime } from "./wrappers/utils"
+import { COLORS, VEHICLE_CLASSES, dataIntervalToTime, FED_DIRS } from "./wrappers/utils"
+
+import { ValueDisplay } from "./components/CountMeta"
+import DataChart from "./components/DataChart"
+import CountStatus from "./components/CountStatus"
 
 const COLUMNS = [
   { accessor: "rc_station",
@@ -42,13 +46,18 @@ const reduceGroups = group => {
   }, VEHICLE_CLASSES.reduce((a, c) => ({ ...a, [c]: 0 }), {}))
 }
 
-const valueFormat = d3format(",d");
+const valueFormat = d3format(",d"),
+  keyFormat = d => FED_DIRS[d];
 
-const ShortCountSpeed = ({ count_id, counts }) => {
+const ShortCountSpeed = ({ count_id, counts, weeklyAvg, meta, updateMeta, user }) => {
 
   const [dateIndex, setDateIndex] = React.useState(0);
 
-  const grouped = React.useMemo(() => {
+  const groupedByDir = React.useMemo(() => {
+    return group(counts, d => d.federal_direction);
+  }, [counts]);
+
+  const groupedByDirByDate = React.useMemo(() => {
     return group(counts, d => d.federal_direction, d => d.date);
   }, [counts]);
 
@@ -77,13 +86,36 @@ const ShortCountSpeed = ({ count_id, counts }) => {
     }));
   }, [rolledup, dateIndex]);
 
+  const weeklyAvgBarData = React.useMemo(() => {
+    const barData = [];
+    if (weeklyAvg.length) {
+      VEHICLE_CLASSES.forEach((vc, i) => {
+        const data = {
+          index: `${ vc }`
+        }
+        weeklyAvg.forEach(avg => {
+          data[avg.federal_direction] = avg.classes[i]
+        })
+        barData.push(data);
+      })
+    }
+    return barData;
+  }, [weeklyAvg]);
+
   return (
     <div className="m-10 grid grid-cols-1 gap-y-6">
       <div className="text-5xl font-bold">
-        Count ID: { count_id }
+        <div className="mb-2">Count ID: { count_id }</div>
+        { user.authLevel < 5 ? null :
+          <>
+            <div className="border rounded-sm"/>
+            <div className="text-base font-normal mt-2">
+              <CountStatus { ...meta } updateMeta={ updateMeta }/>
+            </div>
+          </>
+        }
+        <div className="border-2 rounded-sm"/>
       </div>
-
-      <div className="border-2 rounded-sm"/>
 
       <div className="flex items-center max-w-md">
         <span className="mr-2 font-bold">Select a  date:</span>
@@ -102,7 +134,7 @@ const ShortCountSpeed = ({ count_id, counts }) => {
       { barData.map(({ dir, data }) => (
           <div key={ dir }>
             <CountMeta dir={ dir }
-              counts={ grouped.get(dir).get(date) }/>
+              counts={ groupedByDirByDate.get(dir).get(date) }/>
             <div style={ { height: "24rem" } }>
               <BarGraph colors={ COLORS }
                 data={ data } keys={ VEHICLE_CLASSES }
@@ -122,9 +154,49 @@ const ShortCountSpeed = ({ count_id, counts }) => {
                   label: "Vehicles"
                 } }/>
             </div>
+            { user.authLevel < 5 ? null :
+              <ClassDataTable counts={ groupedByDir.get(dir) }/>
+            }
           </div>
         ))
       }
+
+      <div>
+        <div className="text-2xl font-bold flex">
+          Weekly Averages
+        </div>
+
+        <div className="border rounded-sm"/>
+        <div className="mt-2 flex flex-wrap">
+          <ValueDisplay label="Start Date"
+            value={ [...new Set(weeklyAvg.map(avg => new Date(avg.date).toDateString()))] }/>
+        </div>
+        <div className="border rounded-sm"/>
+
+        { !weeklyAvgBarData.length ? null :
+          <div style={ { height: "24rem" } }>
+            <BarGraph data={ weeklyAvgBarData }
+              keys={ barData.map(({ dir }) => dir) }
+              margin={ { left: 100, bottom: 50 } }
+              padding={ 0.25 }
+              groupMode="grouped"
+              hoverComp={ {
+                keyFormat,
+                valueFormat,
+                // indexFormat
+              } }
+              axisBottom={ {
+                label: "Vehicle Classes",
+                tickDensity: 1.5
+              } }
+              axisLeft={ {
+                label: "Counts",
+                format: valueFormat
+              } }/>
+          </div>
+        }
+      </div>
+
       <Table data={ counts }
         columns={ COLUMNS }
         sortBy="total"
@@ -134,3 +206,98 @@ const ShortCountSpeed = ({ count_id, counts }) => {
   )
 }
 export default ShortCountSpeed;
+
+  // const data = {
+  //   id: cnt.id,
+  //   date: cnt.date,
+  //   dow: new Date(cnt.date).getUTCDay(),
+  //   data: [...INTERVALS]
+  // }
+
+const reducer = group => {
+  return group.reduce((a, c) => {
+    a.date = a.date || c.date;
+    a.dow = a.dow || new Date(c.date).getUTCDay();
+
+    c.classes.forEach((d, i) => {
+      if (!a.bins[i]) {
+        a.bins[i] = 0;
+      }
+      a.bins[i] += d;
+    })
+    return a;
+  }, { bins: new Array(13) })
+}
+
+const ClassDataTable = ({ counts }) => {
+
+  const binnedIntervals = React.useMemo(() => {
+    const binMap = {};
+
+    const rolledup = rollups(counts, reducer, d => d.date, d => Math.floor(d.data_interval))
+      .sort((a, b) => {
+        return +a[0].replace(/[-]/g, "") - +b[0].replace(/[-]/g, "");
+      });
+
+    rolledup.forEach(([date, dGroup]) => {
+      dGroup.sort((a, b) => {
+        return +a[0] - +b[0];
+      })
+      dGroup.forEach(([interval, data]) => {
+        data.bins.forEach((d, i) => {
+          if (!binMap[i]) {
+            binMap[i] = {};
+          }
+          if (!binMap[i][date]) {
+            binMap[i][date] = {
+              date,
+              dow: new Date(date).getUTCDay(),
+              data: new Array(24)
+            }
+            for (let ii = 0; ii < 24; ++ii) {
+              binMap[i][date].data[ii] = 0;
+            }
+          }
+          binMap[i][date].data[interval - 1] = d;
+        })
+      })
+    })
+    return Object.keys(binMap)
+      .sort((a, b) => +a - +b)
+      .map(b =>
+        Object.keys(binMap[b])
+          .sort((a, b) => {
+            return +a[0].replace(/[-]/g, "") - +b[0].replace(/[-]/g, "");
+          })
+          .map(d => binMap[b][d])
+      );
+  }, [counts])
+
+  const [bin, setBin] = React.useState(0);
+
+  return (
+    <div>
+      <div className="flex items-end">
+        { binnedIntervals.map((b, i) => (
+            <div key={ i }
+              className={ `
+                ${ bin === i ?
+                  "text-blueGray-100 bg-blueGray-800 px-5 pt-2 font-bold" :
+                  "px-4 pt-1 bg-blueGray-900 text-blueGray-400"
+                }
+                ${ i > 0 ? "ml-2" : "" }
+                rounded-t cursor-pointer transition
+                hover:bg-blueGray-800 hover:text-blueGray-100
+              ` }
+              onClick={ e => setBin(i) }>
+              Class F{ i + 1 }
+            </div>
+          ))
+        }
+      </div>
+      <div>
+        <DataChart data={ binnedIntervals[bin] }/>
+      </div>
+    </div>
+  )
+}

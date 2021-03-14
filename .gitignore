@@ -25,3 +25,5 @@ yarn-error.log*
 /src/styles/tailwind.css
 
 src/config.private.js
+
+/src/avl-map-git
