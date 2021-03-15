@@ -17,7 +17,7 @@ const countsMeta = Component =>
           if (length) {
             return falcor.get([
               "tds", "count", "meta", "byIndex", { from: 0, to: length - 1 },
-              ["id", "count_id", "upload_id", "status", "type", "date",
+              ["id", "count_id", "upload_id", "status", "type", "start_date",
                 "rc_station", "functional_class", "region_code", "county_code"
               ]
             ])

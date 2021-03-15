@@ -33,6 +33,19 @@ const shortStations = Component =>
           ])
         )
         .then(() =>
+          falcor.get(["tds", "count", "meta", "byStation", stationId, "length"])
+        )
+        .then(res => {
+          const length = +get(res, ["json", "tds", "count", "meta", "byStation", stationId, "length"], 0);
+          if (length) {
+            return falcor.get(
+              ["tds", "count", "meta", "byStation", stationId, "byIndex", { from: 0, to: length - 1 },
+                ["rc_station", "count_id", "id", "start_date", "type", "status"]
+              ]
+            )
+          }
+        })
+        .then(() =>
           falcor.get(["ris", "stations", stationId, YEARS, "array"])
         ).then(() => setLoading(false));
     }, [falcor, stationId, setLoading]);
@@ -69,6 +82,25 @@ const shortStations = Component =>
       return { stationId, data };
     }, [falcorCache, stationId, Regions]);
 
+    const [uploadIndex, setUploadIndex] = React.useState(0);
+
+    const uploads = React.useMemo(() => {
+      const uploads = [];
+      const length = +get(falcorCache, ["tds", "count", "meta", "byStation", stationId, "length"], 0);
+      if (length) {
+        for (let i = 0; i < length; ++i) {
+          const ref = get(falcorCache, ["tds", "count", "meta", "byStation", stationId, "byIndex", i, "value"]),
+            data = get(falcorCache, ref, null);
+          if (data) {
+            uploads.push(data);
+          }
+        }
+      }
+      return uploads
+        .map((d, i) => ({ ...d, index: i }))
+        .sort((a, b) => +b.start_date.replace("_", "") - +a.start_date.replace("_", ""));
+    }, [falcorCache, stationId]);
+
     const stations = React.useMemo(() => {
       return YEARS.reduce((a, c) => {
         const data = get(falcorCache, ["ris", "stations", stationId, c, "array", "value"], []);
@@ -85,7 +117,10 @@ const shortStations = Component =>
 
     return (
       <Component station={ station } years={ YEARS } stations={ stations }
-        loading={ loading }/>
+        loading={ loading }
+        index={ uploadIndex }
+        setIndex={ setUploadIndex }
+        uploads={ uploads }/>
     )
   }
 export default shortStations;
