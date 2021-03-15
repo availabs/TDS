@@ -38,18 +38,18 @@ const DataChart = ({ data }) => {
     return intervals;
   }, [data]);
 
-  const stats = React.useMemo(() => {
-    const allData = []
-    data.forEach(cnt => {
-      if (cnt.dow === 0 || cnt.dow === 6) return;
-      cnt.data.forEach((d, i) => {
-        if (cnt.dow === 1 && i <= 5) return;
-        if (cnt.dow === 5 && i >= 12) return;
-        (d !== 0) && allData.push(d);
-      })
-    })
-    return { mean: d3.mean(allData), dev: d3.deviation(allData) };
-  }, [data]);
+  // const stats = React.useMemo(() => {
+  //   const allData = []
+  //   data.forEach(cnt => {
+  //     if (cnt.dow === 0 || cnt.dow === 6) return;
+  //     cnt.data.forEach((d, i) => {
+  //       if (cnt.dow === 1 && i <= 5) return;
+  //       if (cnt.dow === 5 && i >= 12) return;
+  //       (d !== 0) && allData.push(d);
+  //     })
+  //   })
+  //   return { mean: d3.mean(allData), dev: d3.deviation(allData) };
+  // }, [data]);
 
   return (
     <div className="table table-fixed w-full">

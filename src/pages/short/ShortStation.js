@@ -92,7 +92,7 @@ const Station = props => {
     </>
   )
 }
-const Row = ({ row, large = false }) => (
+export const Row = ({ row, large = false }) => (
   <div className={ `
     flex hover:bg-blueGray-600 px-2 rounded
     ${ large ? "text-3xl leading-8" : "text-lg leading-7" }
@@ -105,7 +105,7 @@ const Row = ({ row, large = false }) => (
     </div>
   </div>
 )
-const Separator = () => <div className="rounded border"/>
+export const Separator = () => <div className="rounded border"/>
 
 const ExpandRowContainer = styled.div`
   position: relative;

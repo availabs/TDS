@@ -1,5 +1,7 @@
 import React from "react"
 
+import { Link } from "react-router-dom"
+
 import { useTheme, hasValue } from "@availabs/avl-components"
 
 import { FED_DIRS } from "../wrappers/utils"
@@ -9,10 +11,11 @@ const pushUnique = (array, value) => {
 }
 
 const CountMeta = ({ counts, date, dir }) => {
-  const rc_station = [],
-    county_code = [],
-    region_code = [],
-    speed_limit = [],
+  let rc_station = null,
+    county_code = null,
+    region_code = null;
+
+  const speed_limit = [],
     vehicle_axle_code = [],
     functional_class = [],
     factor_group = [],
@@ -20,9 +23,9 @@ const CountMeta = ({ counts, date, dir }) => {
     channel_notes = [];
   if (counts) {
       counts.forEach(count => {
-        pushUnique(rc_station, count.rc_station);
-        pushUnique(county_code, count.county_code);
-        pushUnique(region_code, count.region_code);
+        rc_station = count.rc_station;
+        county_code = count.county_code;
+        region_code = count.region_code;
         pushUnique(speed_limit, count.speed_limit);
         pushUnique(vehicle_axle_code, count.vehicle_axle_code);
         pushUnique(functional_class, count.functional_class);
@@ -36,7 +39,9 @@ const CountMeta = ({ counts, date, dir }) => {
     <div>
       <div className="text-2xl font-bold flex items-end">
         <div className="mr-4 text-3xl">
-          RC Station ID: { rc_station }
+          <Link to={ `/short/station/${ rc_station.replace("_", "") }` }>
+            RC Station ID: { rc_station }
+          </Link>
         </div>
         <div>
           Federal Direction: { FED_DIRS[dir] }

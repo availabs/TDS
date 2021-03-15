@@ -63,8 +63,10 @@ const shortCountVolume = Component =>
         for (let i = 0; i < length; ++i) {
           const ref = get(falcorCache, [...basePath, metaId, "byIndex", i, "value"]),
             data = get(falcorCache, ref, null);
+
           if (data) {
             count_id = data.count_id;
+
             counts.push({
               ...data,
               intervals: get(data, ["intervals", "value"], [])
@@ -82,6 +84,20 @@ const shortCountVolume = Component =>
       }
       return [counts, count_id];
     }, [metaId, falcorCache]);
+
+    // React.useEffect(() => {
+    //   if (!counts.length) return;
+    //
+    //   const { rc_station, year } = counts.reduce((a, c) => {
+    //     a.rc_station = c.rc_station.replace("_", "");
+    //     a.year = c.date.slice(0, 4);
+    //     return a;
+    //   }, {});
+    //
+    //   falcor.get([
+    //     "ris", "short", "stations", "aggregate", year, "byId", rc_station, "array"
+    //   ]).then(res => console.log("RES:", res));
+    // }, [falcor, counts]);
 
     const weeklyAvg = React.useMemo(() => {
       return get(falcorCache, ["tds", "short", "volume", "weeklyAvg", "byCountId", metaId, "array", "value"], []);

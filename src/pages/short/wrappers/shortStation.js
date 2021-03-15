@@ -25,10 +25,6 @@ const shortStations = Component =>
       setLoading = useAsyncSafe(_setLoading);
 
     React.useEffect(() => {
-      falcor.get();
-    }, [falcor]);
-
-    React.useEffect(() => {
       setLoading(true);
       falcor.get(["hds", "regions", "byId", REGIONS, ["region", "name"]])
         .then(() =>
