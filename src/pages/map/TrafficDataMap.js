@@ -6,8 +6,6 @@ import AvlMap from "avl-map"
 
 import { MAPBOX_TOKEN } from "config.private"
 
-import { TestCountyLayerFactory } from "./layers/TestCountyLayer"
-import { TestCousubLayerFactory } from "./layers/TestCousubLayer"
 import { RisLayerFactory } from "./layers/RISLayer"
 
 const Map = ({ mapOptions, layers, falcor }) => {

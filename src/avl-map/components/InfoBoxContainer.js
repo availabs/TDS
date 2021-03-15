@@ -34,14 +34,16 @@ const InfoBoxContainer = ({ activeLayers, width = 320, padding = 8, MapActions, 
       style={ { padding: `${ padding }px` } }>
 
       { !legendLayer ? null :
+        legendLayer.legend.show ? 
         <LegendContainer { ...legendLayer.legend }
           padding={ padding } infoBoxWidth={ infoBoxWidth }/>
+        : null
       }
 
       { !infoBoxLayers.length ? null :
         <div className={ `
             ${ theme.sidebarBg } p-1 rounded
-            scrollbar-sm overflow-auto
+            
             pointer-events-auto
           ` }
           style={ {

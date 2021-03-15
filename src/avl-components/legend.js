@@ -10,6 +10,7 @@ import {
   scaleOrdinal,
   scaleQuantize,
   scaleQuantile,
+  scaleThreshold,
   extent as d3extent,
   format as d3format
 } from "d3"
@@ -34,7 +35,7 @@ export const Legend = ({ type, domain, range, format, ...props }) => {
         <LinearScale scale={ scale } format={ Format } { ...props }/> :
         type === "ordinal" ?
         <OrdinalScale scale={ scale } format={ Format } { ...props }/> :
-        type === "quantize" || type === "quantile" ?
+        type === "quantize" || type === "quantile" || type === "threshold"  ?
         <QuantizleScale scale={ scale } format={ Format } { ...props }/> :
         <div>Unknown scale type "{ type }."</div>
       }
@@ -58,6 +59,10 @@ const getScale = (type, domain, range) => {
         .range(range);
     case "quantile":
       return scaleQuantile()
+        .domain(domain)
+        .range(range);
+    case "threshold":
+      return scaleThreshold()
         .domain(domain)
         .range(range);
     default:
@@ -124,7 +129,7 @@ export const DummyLegendTools = ({ layer, current, updateLegend, dispatch, size,
   }, [size]);
 
   return (
-    <>
+    <React.Fragment>
       <div className="flex items-center mb-1">
         <div className="w-36">Step Size</div>
         <div className="flex-1">
@@ -158,7 +163,7 @@ export const DummyLegendTools = ({ layer, current, updateLegend, dispatch, size,
           )
         }
       </div>
-    </>
+    </React.Fragment>
   )
 }
 const ColorType = ({ type, ranges, current, opened, setOpen, reverse, update }) => (
