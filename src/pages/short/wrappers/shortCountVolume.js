@@ -29,7 +29,7 @@ const shortCountVolume = Component =>
           "rc_station", "functional_class", "region_code", "county_code"
         ]
       ]).then(() =>
-       falcor.get(["tds", "short", "volume", "weeklyAvg", "byCountId", metaId, "array"])
+        falcor.get(["tds", "short", "volume", "weeklyAvg", "byCountId", metaId, "array"])
           .then(() => falcor.get([...basePath, metaId, "length"]))
           .then(res => {
             const length = +get(res, ["json", ...basePath, metaId, "length"], 0);

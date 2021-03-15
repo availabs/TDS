@@ -24,10 +24,10 @@ const AuthConfig = {
 // @props.addToGroup
 // Optional prop. Defaults to false.
 // Adds user to group (must have auth level 0 in all projects) instead of creating a request that must be accepted by admin.
-      // props: { addToGroup: "123" }
+      props: { addToGroup: "TDS Public" }
     },
-    // { type: "ams-verify-request" }, // This is only required when addToGroup prop is included with ams-signup
-    { type: "ams-verify-email" }, // This is only required when addToGroup prop is not included with ams-signup
+    { type: "ams-verify-request" }, // This is only required when addToGroup prop is included with ams-signup
+    // { type: "ams-verify-email" }, // This is only required when addToGroup prop is not included with ams-signup
 
     { type: "ams-set-password" },
 

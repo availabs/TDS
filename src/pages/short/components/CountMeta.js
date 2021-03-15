@@ -34,15 +34,16 @@ const CountMeta = ({ counts, date, dir }) => {
         pushUnique(channel_notes, count.channel_notes);
       })
   }
+  const theme = useTheme();
 
   return (
     <div>
       <div className="text-2xl font-bold flex items-end">
-        <div className="mr-4 text-3xl">
-          <Link to={ `/short/station/${ rc_station.replace("_", "") }` }>
-            RC Station ID: { rc_station }
-          </Link>
-        </div>
+        <Link to={ `/short/station/${ rc_station.replace("_", "") }` }
+          className="mr-4 text-3xl flex items-center hover:text-cyan-300">
+          <span className="fa fa-external-link-alt mr-2"/>
+          RC Station ID: { rc_station }
+        </Link>
         <div>
           Federal Direction: { FED_DIRS[dir] }
         </div>

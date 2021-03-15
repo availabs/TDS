@@ -3,6 +3,7 @@ import React from "react"
 import { useParams } from "react-router-dom"
 
 import get from "lodash.get"
+import { rollups } from "d3"
 
 import { useAsyncSafe } from "avl-components"
 
@@ -35,7 +36,8 @@ const shortWrapper = Component =>
       falcor.get([
         "ris", "byRegion", region, YEARS, "byClass", CLASSES,
         ['functional_class', 'aadt', 'length', 'vmt']
-      ]).then(() => falcor.get(["ris", "short", "stations", "aggregate", region, year, "length"]))
+      ])
+        .then(() => falcor.get(["ris", "short", "stations", "aggregate", region, year, "length"]))
         .then(res => {
           const length = +get(res, ["json", "ris", "short", "stations", "aggregate", region, year, "length"], 0);
           if (length) {
@@ -46,8 +48,43 @@ const shortWrapper = Component =>
             )
           }
         })
+        .then(() =>
+          falcor.get(["tds", "count", "meta", "byRegion", region, "length"])
+        )
+        .then(res => {
+          const length = +get(res, ["json", "tds", "count", "meta", "byRegion", region, "length"], 0);
+          if (length) {
+            return falcor.get([
+              "tds", "count", "meta", "byRegion", region, "byIndex", { from: 0, to: length - 1 },
+              ["id", "rc_station", "upload_id", "start_date"]
+            ])
+            .then(res => console.log("RES:", res))
+          }
+        })
         .then(() => setLoading(false));
     }, [falcor, region, setLoading, year]);
+
+    const stationsWithUploads = React.useMemo(() => {
+      const stations = [];
+      const length = +get(falcorCache, ["tds", "count", "meta", "byRegion", region, "length"], 0);
+      if (length) {
+        for (let i = 0; i < length; ++i) {
+          const ref = get(falcorCache, ["tds", "count", "meta", "byRegion", region, "byIndex", i, "value"]),
+            data = get(falcorCache, ref, null);
+          if (data) {
+            stations.push(data);
+          }
+        }
+      }
+      return rollups(stations, d => d.length, d => d.start_date.slice(0, 4), d => d.rc_station.replace("_", ""))
+        .reduce((a, c) => {
+          a[c[0]] = c[1].reduce((a, c) => {
+            a[c[0]] = c[1];
+            return a;
+          }, { year });
+          return a;
+        }, {});
+    }, [falcorCache, region, year]);
 
     const stations = React.useMemo(() => {
       const length = +get(falcorCache, ["ris", "short", "stations", "aggregate", region, year, "length"], 0);
@@ -58,12 +95,18 @@ const shortWrapper = Component =>
         const ref = get(falcorCache, ["ris", "short", "stations", "aggregate", region, year, "byIndex", i, "value"]),
           data = get(falcorCache, ref);
         if (data) {
-          stations.push(...get(data, ["array", "value"], []));
+          stations.push(
+            ...get(data, ["array", "value"], [])
+              .map(d => {
+                d.uploads = get(stationsWithUploads, [year, d.stationId], 0);
+                return d;
+              })
+          );
         }
       }
 
       return stations;
-    }, [region, falcorCache, year]);
+    }, [falcorCache, region, year, stationsWithUploads]);
 
     const [Region, regions] = React.useMemo(() =>
       REGIONS.reduce((a, c) => {

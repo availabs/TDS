@@ -1,19 +1,48 @@
 import React from "react"
 
-import styled from "styled-components"
-import { format as d3format } from "d3"
+import { Link } from "react-router-dom"
 
-import { useTheme } from "@availabs/avl-components"
+import get from "lodash.get"
+import styled from "styled-components"
+import { format as d3format, groups } from "d3"
+
+import { useTheme, useFalcor, Select } from "@availabs/avl-components"
+
+import { BarGraph } from "avl-graph/src"
 
 import StationVMTGraph from "./components/StationVMTGraph"
 import StationTable from "./components/StationTable"
 
+import { COLORS, BINS, SPEED_BINS, FED_DIRS, VEHICLE_CLASSES } from "./wrappers/utils"
+
 const aadtFormat = d3format(",d"),
   vmtFormat = d3format(",.1f");
 
+const intervalToTime = (i, mod = 1) => {
+  const h = Math.floor(+i / mod),
+    m = `00${ (+i % mod) * 15 }`,
+    hour = h === 0 ? 12 : h > 12 ? h - 12 : h,
+    ampm = h < 12 ? "am" : "pm";
+
+  return `${ hour }:${ m.slice(-2) } ${ ampm }`
+}
+
+const valueFormat = d3format(",d"),
+  keyFormat = d => FED_DIRS[d];
+const indexFormat = key => {
+  const index = BINS.indexOf(key);
+  if (index > -1) {
+    return SPEED_BINS[index];
+  }
+  if (!isNaN(key)) {
+    return intervalToTime(key);
+  }
+  return key;
+}
+
 const selector = ({ year }) => year;
 
-const ShortStation = ({ station, years, stations }) => {
+const ShortStation = ({ station, years, stations, uploads, index, setIndex }) => {
   const [year, setYear] = React.useState(years[0]);
 
   const stationsByYear = React.useMemo(() =>
@@ -42,6 +71,16 @@ const ShortStation = ({ station, years, stations }) => {
 
       <div className="col-span-2 border-2 rounded-sm"/>
 
+      { !uploads.length ? null :
+        <div className="col-span-2">
+          <StationBarGraph uploads={ uploads }
+            index={ index }
+            setIndex={ setIndex }/>
+        </div>
+      }
+
+      <div className="col-span-2 border-2 rounded-sm"/>
+
       <div className="col-span-2">
         <StationTable station={ stationsByYear }/>
       </div>
@@ -49,6 +88,128 @@ const ShortStation = ({ station, years, stations }) => {
   )
 }
 export default ShortStation;
+
+const StationBarGraph = ({ uploads, index, setIndex }) => {
+  const count = uploads[index],
+    { id, type, count_id, status } = count,
+    [countType, dataType] = type.split(" ");
+
+  const { falcor, falcorCache } = useFalcor();
+
+  React.useEffect(() => {
+    falcor.get(
+      ["tds", countType, dataType, "weeklyAvg", "byCountId", id, "array"]
+    )
+  }, [falcor, id, countType, dataType]);
+
+  const weeklyAvg = React.useMemo(() => {
+    return get(falcorCache, ["tds", countType, dataType, "weeklyAvg", "byCountId", id, "array", "value"], []);
+  }, [falcorCache, id, countType, dataType]);
+
+  const fedDirs = React.useMemo(() => {
+    return groups(weeklyAvg, d => d.federal_direction);
+  }, [weeklyAvg]);
+
+  const weeklyAvgBarData = React.useMemo(() => {
+    const barData = [];
+    if (weeklyAvg.length) {
+      switch (dataType) {
+        case "volume": {
+          for (let i = 1; i <= 24; ++i) {
+            const interval = {
+              index: `${ i }`
+            }
+            weeklyAvg.forEach(avg => {
+              interval[avg.federal_direction] = avg.intervals[i - 1]
+            })
+            barData.push(interval);
+          }
+          break;
+        }
+        case "speed": {
+          BINS.forEach((b, i) => {
+            const data = {
+              index: `${ b }`
+            }
+            weeklyAvg.forEach(avg => {
+              data[avg.federal_direction] = avg.bins[i]
+            })
+            barData.push(data);
+          })
+          break;
+        }
+        case "class": {
+          if (weeklyAvg.length) {
+            VEHICLE_CLASSES.forEach((vc, i) => {
+              const data = {
+                index: `${ vc }`
+              }
+              weeklyAvg.forEach(avg => {
+                data[avg.federal_direction] = avg.classes[i]
+              })
+              barData.push(data);
+            })
+          }
+          break;
+        }
+        default:
+          break;
+      }
+    }
+    return barData;
+  }, [weeklyAvg, countType, dataType]);
+
+  return (
+    <div>
+      <div>
+        <div className="font-bold text-2xl">
+          Uploaded Counts
+        </div>
+        <div className="border"/>
+        <div className="flex items-center my-2">
+          <Link to={ `/${ countType }/${ dataType }/count/${ id }` }
+            className="font-bold text-lg block hover:text-cyan-300 mr-4">
+            <span className="fa fa-external-link-alt mr-1"/>
+            { count_id }
+          </Link>
+          <Select options={ uploads }
+            multi={ false }
+            searchable={ false }
+            removable={ false }
+            value={ index }
+            onChange={ setIndex }
+            valueAccessor={ d => +d.index }
+            accessor={ d => `${ d.type } ${ d.start_date }` }/>
+          <span className="font-bold text-lg ml-4">(Status: { status })</span>
+        </div>
+        <div className="border"/>
+      </div>
+      <div className=""
+        style={ { height: "24rem" } }>
+        <BarGraph data={ weeklyAvgBarData }
+          keys={ fedDirs.map(d => d[0]).sort((a, b) => +b - +a) }
+          margin={ { left: 100, bottom: 50 } }
+          padding={ 0.25 }
+          groupMode="grouped"
+          hoverComp={ {
+            keyFormat,
+            valueFormat,
+            indexFormat
+          } }
+          axisBottom={ {
+            label: dataType === "volume" ? "Intervals" :
+              dataType === "class" ? "Vehicle Classes" : "Speed Bins",
+            tickDensity: dataType === "speed" ? 0.5 : 1.5,
+            format: indexFormat
+          } }
+          axisLeft={ {
+            label: "Counts",
+            format: valueFormat
+          } }/>
+      </div>
+    </div>
+  )
+}
 
 const Selected = ({ selected }) => {
   return (

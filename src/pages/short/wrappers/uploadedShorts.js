@@ -62,6 +62,7 @@ const uploadedShorts = Component => {
           if (upload) {
             uploads.push({
               ...upload,
+              expand: [{ meta: get(upload, ["meta", "value"], null) }],
               meta: get(upload, ["meta", "value"], null),
               created_by: users.reduce((a, c) => {
                 return `${ c.id }` === `${ upload.created_by }` ? `(${ c.id }) ${ c.email }` : a;

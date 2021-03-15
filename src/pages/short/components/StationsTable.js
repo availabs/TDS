@@ -1,6 +1,6 @@
 import React from "react"
 
-import { useHistory } from "react-router-dom"
+import { Link } from "react-router-dom"
 
 import { Table, useTheme } from "@availabs/avl-components"
 
@@ -10,12 +10,18 @@ const intFormat = d3format(",d");
 
 const COLUMNS = [
   { accessor: "stationId",
-    Header: "RC Station ID"
+    Header: "RC Station ID",
+    Cell: ({ value }) => (
+      <Link to={ `/short/station/${ value }` }
+        className="block hover:text-cyan-400">
+        <span className="fa fa-external-link-alt mr-2"/>
+        { value }
+      </Link>
+    )
   },
-  // { accessor: "region",
-  //   Header: "Region",
-  //   disableFilters: true
-  // },
+  { accessor: "uploads",
+    Header: "Uploads"
+  },
   { accessor: "mpo",
     Header: "MPO"
   },
@@ -64,11 +70,11 @@ const ExpandRow = ({ values: [{ functional_class, road_name, length }] }) =>
   </div>
 
 const StationsTable = ({ stations }) => {
-  const history = useHistory();
+  // const history = useHistory();
 
-  const onRowClick = React.useCallback((e, row) => {
-    history.push(`/short/station/${ row.values.stationId }`);
-  }, [history]);
+  // const onRowClick = React.useCallback((e, row) => {
+  //   history.push(`/short/station/${ row.values.stationId }`);
+  // }, [history]);
 
   const theme = useTheme();
   return !stations.length ? null : (
@@ -76,7 +82,7 @@ const StationsTable = ({ stations }) => {
       <Table columns={ COLUMNS }
         initialPageSize={ 15 }
         ExpandRow={ ExpandRow }
-        onRowClick={ onRowClick }
+        // onRowClick={ onRowClick }
         data={
           stations.map(s =>
             ({ ...s,
@@ -88,7 +94,7 @@ const StationsTable = ({ stations }) => {
             })
           )
         }
-        sortBy="aadt"
+        sortBy="uploads"
         sortOrder="desc"/>
     </div>
   )

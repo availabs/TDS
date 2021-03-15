@@ -1,6 +1,6 @@
 import React from "react"
 
-import { useHistory } from "react-router-dom"
+import { Link } from "react-router-dom"
 
 import { Table } from "@availabs/avl-components"
 
@@ -29,7 +29,14 @@ const UploadColumns = [
 ]
 const CountColumns = [
   { accessor: "count_id",
-    Header: "Count ID"
+    Header: "Count ID",
+    Cell: ({ value, row }) => (
+      <Link to={ `/short/${ row.original.data_type }/count/${ row.original.id }` }
+        className="block hover:text-cyan-400">
+        <span className="fa fa-external-link-alt mr-2"/>
+        { value }
+      </Link>
+    )
   },
   { id: "type",
     accessor: d => `${ d.count_type } ${ d.data_type }`,
@@ -40,27 +47,36 @@ const CountColumns = [
   }
 ]
 
+const ExpandRow = ({ values }) => {
+  return (
+    <div>
+      { JSON.stringify(values[0].meta) }
+    </div>
+  )
+}
+
 const UploadedShorts = ({ uploads, counts, setUploadId, ...props }) => {
 
   const onUploadedRowClick = React.useCallback((e, row) => {
     setUploadId(["short", row.values.dataType.toLowerCase(), row.original.upload_id]);
   }, [setUploadId]);
 
-  const { push } = useHistory();
+  // const { push } = useHistory();
 
-  const onRowClick = React.useCallback((e, row) => {
-    push(`/short/${ row.original.data_type }/count/${ row.original.id }`);
-  }, [push]);
+  // const onRowClick = React.useCallback((e, row) => {
+  //   push(`/short/${ row.original.data_type }/count/${ row.original.id }`);
+  // }, [push]);
 
   return (
     <div className="m-10">
       <Table data={ uploads }
         onRowClick={ onUploadedRowClick }
+        ExpandRow={ ExpandRow }
         columns={ UploadColumns }/>
       { !counts.length ? null :
         <div className="mt-4">
           <Table data={ counts }
-            onRowClick={ onRowClick }
+            // onRowClick={ onRowClick }
             columns={ CountColumns }/>
         </div>
       }
