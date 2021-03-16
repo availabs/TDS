@@ -134,7 +134,13 @@ const handleDroppedFile = async droppedFile => {
 
 const checkHeaders = (row, headers) => {
   for (let i = 0; i < headers.length; ++i) {
-    if (row[0] !== headers[0]) return false;
+    if (Array.isArray(headers[i])) {
+      const bool = headers[i].reduce((a, c) => a || (c === row[i]), false);
+      if (!bool) return false;
+    }
+    else {
+      if (row[i] !== headers[i]) return false;
+    }
   }
   return true;
 }
@@ -161,8 +167,14 @@ const PromiseReader = file => {
     fr.onload = loaded => {
       const rawData = loaded.target.result;
 
+      const regex = /^["](.*)["]$/;
+
       let data = rawData.trim().split(/[\n]+/)
-        .map(row => row.trim().split(/[,]/).map(r => r.trim()));
+        .map(row =>
+          row.trim().split(/[,]/)
+            .map(r => regex.test(r) ? regex.exec(r)[1] : r)
+            .map(r => r.trim())
+        );
 
       const len = data[0].length;
 

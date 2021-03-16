@@ -78,7 +78,7 @@ const Reducer = (state, action) => {
     case "files-dropped":
       return {
         ...state,
-        loading: payload.length,
+        loading: state.loading + payload.length,
         badOver: false,
         over: false
       }
@@ -86,7 +86,7 @@ const Reducer = (state, action) => {
     case "add-file":
       return {
         ...state,
-        loading: state.loading - 1,
+        loading: Math.max(0, state.loading - 1),
         files: [
           ...state.files,
           payload.file
