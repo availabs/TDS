@@ -14,7 +14,7 @@ const makeBlue = [
 const AuthContainer = ({ children, action }) => {
   const bgColor = makeBlue.includes(action) ? "bg-gray-800" : "bg-transparent";
   return (
-    <div className='h-screen  h-full flex-1 flex flex-col text-white'>
+    <div className='min-h-screen  h-full flex-1 flex flex-col text-white'>
       <Pattern />
       <div class="relative">
         <PublicNav />
