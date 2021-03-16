@@ -19,6 +19,9 @@ import InfoBoxes from "./components/InfoBoxContainer"
 import DraggableModal from "./components/DraggableModal"
 import MapAction from "./components/MapAction"
 
+// eslint-disable-next-line import/no-webpack-loader-syntax
+mapboxgl.workerClass = require('worker-loader!mapbox-gl/dist/mapbox-gl-csp-worker').default;
+
 export const DefaultStyles = [
   { name: "Dark",
     style: 'mapbox://styles/am3081/ckm85o7hq6d8817nr0y6ute5v' },
