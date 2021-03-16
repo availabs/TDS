@@ -157,7 +157,7 @@ const StationBarGraph = ({ uploads, index, setIndex }) => {
       }
     }
     return barData;
-  }, [weeklyAvg, countType, dataType]);
+  }, [weeklyAvg, dataType]);
 
   return (
     <div>

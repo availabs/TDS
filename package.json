@@ -10,6 +10,7 @@
     "@testing-library/user-event": "^12.8.1",
     "colorbrewer": "^1.4.0",
     "d3": "^6.5.0",
+    "d3-dsv": "^2.0.0",
     "d3-format": "^2.0.0",
     "lodash.get": "^4.4.2",
     "mapbox-gl": "^2.1.1",

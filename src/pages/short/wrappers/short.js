@@ -49,16 +49,15 @@ const shortWrapper = Component =>
           }
         })
         .then(() =>
-          falcor.get(["tds", "count", "meta", "byRegion", region, "length"])
+          falcor.get(["tds", "count", "meta", "byRegion", region, year, "length"])
         )
         .then(res => {
-          const length = +get(res, ["json", "tds", "count", "meta", "byRegion", region, "length"], 0);
+          const length = +get(res, ["json", "tds", "count", "meta", "byRegion", region, year, "length"], 0);
           if (length) {
             return falcor.get([
-              "tds", "count", "meta", "byRegion", region, "byIndex", { from: 0, to: length - 1 },
+              "tds", "count", "meta", "byRegion", region, year, "byIndex", { from: 0, to: length - 1 },
               ["id", "rc_station", "upload_id", "start_date"]
             ])
-            .then(res => console.log("RES:", res))
           }
         })
         .then(() => setLoading(false));
@@ -66,10 +65,10 @@ const shortWrapper = Component =>
 
     const stationsWithUploads = React.useMemo(() => {
       const stations = [];
-      const length = +get(falcorCache, ["tds", "count", "meta", "byRegion", region, "length"], 0);
+      const length = +get(falcorCache, ["tds", "count", "meta", "byRegion", region, year, "length"], 0);
       if (length) {
         for (let i = 0; i < length; ++i) {
-          const ref = get(falcorCache, ["tds", "count", "meta", "byRegion", region, "byIndex", i, "value"]),
+          const ref = get(falcorCache, ["tds", "count", "meta", "byRegion", region, year, "byIndex", i, "value"]),
             data = get(falcorCache, ref, null);
           if (data) {
             stations.push(data);
