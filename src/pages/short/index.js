@@ -222,7 +222,7 @@ const Counts = {
     fixed: true,
     navBar: 'side',
     headerBar: {
-      title: "Counts Meta"
+      title: "Counts Manager"
     }
   },
   component: {

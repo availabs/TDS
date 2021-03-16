@@ -49,6 +49,7 @@ const AuthConfig = {
 const auth = {
   path: "/auth",
   mainNav: false,
+  layout: 'Simple',
   layoutSettings: {
     fixed: true,
     navBar: 'side',

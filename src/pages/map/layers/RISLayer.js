@@ -24,6 +24,8 @@ const HoverComp = ({ data, layer }) => {
        'begin_description',
        'end_description',
        'county_order',
+       'aadt_single_unit',
+       'aadt_combo',
        'beg_mp',
        'end_mp'
       ]
@@ -38,7 +40,7 @@ const HoverComp = ({ data, layer }) => {
     <div className="p-1">
       <div className=" px-2">
         <div className="text-center">
-          {RisInfo.road_name} - {RisInfo.gis_id}
+          {RisInfo.road_name}
         </div>
         <div className='flex text-xs text-center'>
           <div className='flex-1'>from</div>
@@ -52,25 +54,38 @@ const HoverComp = ({ data, layer }) => {
           <div className='flex-1'>{RisInfo.beg_mp}</div>
           <div className='flex-1'>{RisInfo.end_mp}</div>
         </div>
-        { data.map((row, i) =>
-            <div key={ i } className="flex">
-              { row.map((d, ii) =>
-                  <div key={ ii }
-                    className={ `
-                      ${ ii === 0 ? "flex-1 font-bold" : "flex-0" }
-                      ${ row.length > 1 && ii === 0 ? "mr-4" : "" }
-                      ${ row.length === 1 && ii === 0 ? "border-b-2" : "" }
-                    ` }>
-                    { d }
-                  </div>
-                )
-              }
-            </div>
-          )
-        }
-        <div className="text-center">
-          
+        <div className='flex text-xs px-1'>
+          <div className='flex-1 font-bold'>GIS ID</div>
+          <div className='flex-0'>{RisInfo.gis_id}</div>
         </div>
+        <div className='flex text-xs pb-1'>
+          <div className='flex-1 font-bold'>Co Order</div>
+          <div className='flex-0'>{RisInfo.county_order}</div>
+        </div>
+        <div className='flex text-xs pb-1'>
+          <div className='flex-1 font-bold'>Region</div>
+          <div className='flex-0'>{RisInfo.region}</div>
+        </div>
+         <div className='flex text-xs  p-1'>
+          <div className='flex-1 font-bold text-center'>Station {get(data , `[1][1]` , '')}</div>
+        </div>
+        <div className='flex text-xs pb-1'>
+          <div className='flex-1 font-bold'>AADT</div>
+          <div className='flex-0'>{get(data , `[2][1]` , 0).toLocaleString()}</div>
+        </div>
+        <div className='flex text-xs pb-1'>
+          <div className='flex-1 font-bold'>AADT SU</div>
+          <div className='flex-0'>{RisInfo.aadt_single_unit}</div>
+        </div>
+        <div className='flex text-xs pb-1'>
+          <div className='flex-1 font-bold'>AADT Comb</div>
+          <div className='flex-0'>{RisInfo.aadt_combo}</div>
+        </div>
+        <div className='flex text-xs pb-1'>
+          <div className='flex-1 font-bold'>Last Count</div>
+          <div className='flex-0'>{get(data , `[3][1]` , 0)}</div>
+        </div>
+        
       </div>
     </div>
   )
