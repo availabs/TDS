@@ -22,7 +22,8 @@
     "redux": "^4.0.5",
     "redux-thunk": "^2.3.0",
     "styled-components": "^5.2.1",
-    "web-vitals": "^0.2.4"
+    "web-vitals": "^0.2.4",
+    "worker-loader": "^3.0.8"
   },
   "scripts": {
     "analyze": "source-map-explorer 'build/static/js/*.js'",
