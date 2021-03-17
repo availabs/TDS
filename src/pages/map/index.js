@@ -2,7 +2,7 @@ import React from "react"
 
 import get from "lodash.get"
 
-import AvlMap from "avl-map"
+import { AvlMap } from "@availabs/avl-map"
 
 import { MAPBOX_TOKEN } from "config.private"
 

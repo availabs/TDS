@@ -2,7 +2,7 @@ import React from "react"
 
 import get from "lodash.get"
 
-import AvlMap from "avl-map"
+import { AvlMap } from "@availabs/avl-map"
 
 import { MAPBOX_TOKEN } from "config.private"
 
@@ -27,7 +27,7 @@ const Map = withAuth(({ mapOptions, layers, falcor, user }) => {
   return (
     <div className='h-screen  h-full flex-1 flex flex-col text-white'>
       {user && user.authLevel > 0 ? <React.Fragment/> : <PublicNav />}
-      <AvlMap 
+      <AvlMap
         accessToken={ MAPBOX_TOKEN }
         mapOptions={ mapOptions }
         layers={ layers }

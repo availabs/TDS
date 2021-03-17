@@ -34,7 +34,6 @@ const CountMeta = ({ counts, date, dir }) => {
         pushUnique(channel_notes, count.channel_notes);
       })
   }
-  const theme = useTheme();
 
   return (
     <div>

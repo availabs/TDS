@@ -3,9 +3,9 @@ import get from "lodash.get"
 
 import { rollups } from "d3"
 
-import { getColorRange } from "avl-components"
+import { getColorRange } from "@availabs/avl-components"
 
-import LayerContainer from "avl-map/LayerContainer"
+import { LayerContainer } from "@availabs/avl-map"
 
 import { TestDynamicLayerFactory } from "./TestDynamicLayer"
 import { TestModal1, TestModal2 } from "./TestModal"

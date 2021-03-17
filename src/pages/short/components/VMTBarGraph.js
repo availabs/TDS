@@ -2,7 +2,7 @@ import React from "react"
 
 import { format as d3format } from "d3"
 
-import { getColorRange } from "avl-components"
+import { getColorRange } from "@availabs/avl-components"
 
 import { BarGraph } from "avl-graph/src"
 

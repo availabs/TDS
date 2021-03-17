@@ -1,4 +1,4 @@
-import { getColorRange } from "avl-components"
+import { getColorRange } from "@availabs/avl-components"
 
 const colors1 = getColorRange(7, "Set3"),
   colors2 = getColorRange(7, "Set1");

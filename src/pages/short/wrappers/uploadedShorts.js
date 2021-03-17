@@ -6,7 +6,7 @@ import get from "lodash.get"
 
 import { getUsers } from "@availabs/ams"
 
-import { useAsyncSafe } from "avl-components"
+import { useAsyncSafe } from "@availabs/avl-components"
 
 const uploadedShorts = Component => {
   const Wrapper = ({ falcor, falcorCache, getUsers, users, ...props }) => {

@@ -1,13 +1,12 @@
 import React from 'react'
 import get from 'lodash.get'
 
-import { getColorRange, Legend } from "avl-components"
+import { getColorRange, Legend } from "@availabs/avl-components"
 import { Select, useFalcor } from '@availabs/avl-components'
 
 import { RISSources, RISLayers } from 'pages/map/map-styles/ris'
 
-import LayerContainer from "avl-map/LayerContainer"
-
+import { LayerContainer } from "@availabs/avl-map"
 
 const HoverComp = ({ data, layer }) => {
   const { falcor, falcorCache} = useFalcor();
@@ -85,14 +84,14 @@ const HoverComp = ({ data, layer }) => {
           <div className='flex-1 font-bold'>Last Count</div>
           <div className='flex-0'>{get(data , `[3][1]` , 0)}</div>
         </div>
-        
+
       </div>
     </div>
   )
 }
 
 const displayModes = {
-  'a': {  
+  'a': {
     domain:[1500,5000,10000,25000,40000,75000,150000],
     range: getColorRange(7, "Reds", true),
     format: ".2s"
@@ -109,13 +108,13 @@ class RisLayer extends LayerContainer {
   name = "RIS"
   sources = RISSources
   layers = RISLayers
-  
+
   state = {
     activeStation: null,
     displayMode: 'a',
     ...displayModes['a']
   }
- 
+
   onHover = {
     layers: [...RISLayers.map(d => d.id)],
     callback: (layerId, features, lngLat) => {
@@ -138,7 +137,7 @@ class RisLayer extends LayerContainer {
       console.log('click', feature, features)
       this.updateState({activeStation: feature.s})
     },
-   
+
   }
 
   setActiveStation = () => {
@@ -149,7 +148,7 @@ class RisLayer extends LayerContainer {
     { Component: ({ layer }) => {
         return (
           <div>
-            <Select 
+            <Select
               options={[
                 {name:'Annual Average Daily Traffic', v:'a'},
                 {name:'Year of Last Count', v:'l'}
@@ -158,15 +157,15 @@ class RisLayer extends LayerContainer {
               accessor={d => d.name}
               onChange={d => {
                 layer.updateState({
-                  displayMode: d, 
+                  displayMode: d,
                   ...displayModes[d]
                 })
                 layer.setDisplayMode(d)
-                
+
               }}
               value={layer.state.displayMode}
-              multi={ false } 
-              searchable={ false } 
+              multi={ false }
+              searchable={ false }
               removable={ false }
             />
             <div className='py-2'>
@@ -187,7 +186,7 @@ class RisLayer extends LayerContainer {
   ]
 
   setDisplayMode = (displayMode) => {
-    console.log('set displayMode',...this.state.domain.map((d,i) => [d,this.state.range[i]]))  
+    console.log('set displayMode',...this.state.domain.map((d,i) => [d,this.state.range[i]]))
     RISLayers.forEach(d => {
         this.mapboxMap.setPaintProperty(d.id, 'line-color',  {
           property: displayMode,
@@ -197,17 +196,17 @@ class RisLayer extends LayerContainer {
           ]
         })
     })
-    
-    
+
+
   }
 
   init(map, falcor) {
-    
+
   }
   render(map) {
     this.setDisplayMode(this.state.displayMode)
-    
-  } 
+
+  }
 }
 
 export const RisLayerFactory = (options = {}) => new RisLayer(options);

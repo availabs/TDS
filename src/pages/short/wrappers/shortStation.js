@@ -7,7 +7,7 @@ import { format as d3format } from "d3"
 
 import { YEARS, REGIONS } from "./utils"
 
-import { useAsyncSafe } from "avl-components"
+import { useAsyncSafe } from "@availabs/avl-components"
 
 const numFormat = d3format(",d");
 

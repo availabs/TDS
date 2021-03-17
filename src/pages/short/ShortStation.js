@@ -13,7 +13,7 @@ import { BarGraph } from "avl-graph/src"
 import StationVMTGraph from "./components/StationVMTGraph"
 import StationTable from "./components/StationTable"
 
-import { COLORS, BINS, SPEED_BINS, FED_DIRS, VEHICLE_CLASSES } from "./wrappers/utils"
+import { BINS, SPEED_BINS, FED_DIRS, VEHICLE_CLASSES } from "./wrappers/utils"
 
 const aadtFormat = d3format(",d"),
   vmtFormat = d3format(",.1f");

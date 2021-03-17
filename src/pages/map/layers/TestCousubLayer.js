@@ -4,7 +4,7 @@ import get from "lodash.get"
 
 import { rollups } from "d3"
 
-import LayerContainer from "avl-map/LayerContainer"
+import { LayerContainer } from "@availabs/avl-map"
 
 const HoverComp = ({ data, layer }) => {
   return (

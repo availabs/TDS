@@ -4,7 +4,7 @@ import { useParams } from "react-router-dom"
 
 import get from "lodash.get"
 
-import { useAsyncSafe } from "avl-components"
+import { useAsyncSafe } from "@availabs/avl-components"
 
 import { REGIONS, GLOBAL_ATTRIBUTES } from "./utils"
 

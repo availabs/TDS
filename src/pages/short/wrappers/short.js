@@ -5,7 +5,7 @@ import { useParams } from "react-router-dom"
 import get from "lodash.get"
 import { rollups } from "d3"
 
-import { useAsyncSafe } from "avl-components"
+import { useAsyncSafe } from "@availabs/avl-components"
 
 import { REGIONS, CLASSES, YEARS } from "./utils"
 

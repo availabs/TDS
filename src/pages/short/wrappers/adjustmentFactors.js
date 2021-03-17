@@ -2,7 +2,7 @@ import React from "react"
 
 import get from "lodash.get"
 
-import { useAsyncSafe } from "avl-components"
+import { useAsyncSafe } from "@availabs/avl-components"
 
 const INITIAL_STATE = {
   meta: [],

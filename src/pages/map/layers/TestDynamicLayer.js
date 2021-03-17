@@ -3,7 +3,7 @@ import get from "lodash.get"
 
 import { rollups } from "d3"
 
-import LayerContainer from "avl-map/LayerContainer"
+import { LayerContainer } from "@availabs/avl-map"
 
 class TestDynamicLayer extends LayerContainer {
   name = "Dyanmic Counties"
