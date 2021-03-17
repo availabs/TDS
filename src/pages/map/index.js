@@ -22,7 +22,8 @@ const Map = ({ mapOptions, layers, falcor }) => {
   }, [falcor]);
 
   return (
-    <AvlMap accessToken={ MAPBOX_TOKEN }
+    <AvlMap 
+      accessToken={ MAPBOX_TOKEN }
       mapOptions={ mapOptions }
       layers={ layers }
       sidebar={ {
@@ -73,6 +74,8 @@ const MapPage = {
     ]
   }
 }
+
+
 const routes = [
   MapPage
 ];

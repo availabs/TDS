@@ -7,7 +7,7 @@ import { NavMenu, NavMenuItem, NavMenuSeparator, NavItem, withAuth } from '@avai
 export default withAuth(({ title, shadowed = true, user, children }) => {
   // const theme = useTheme();
   return (
-    <div className="h-full flex py-2">
+    <div className="h-full flex py-2 bg-gray-800">
       {!user.authed ? <NavItem to="/auth/login" type='top' customTheme={{
         navitemTop: 'px-8 bg-blue-500 rounded inline-flex items-center text-base font-normal text-white hover:pb-4 focus:outline-none focus:text-gray-700 focus:border-gray-300 transition duration-150 ease-in-out',
         navitemTopActive: 'px-8 bg-blue-500 rounded inline-flex items-center  text-base font-normal text-white-500 hover:pb-4 focus:outline-none focus:text-gray-700 focus:border-gray-300 transition duration-150 ease-in-out'
