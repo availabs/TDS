@@ -1,12 +1,12 @@
 import AuthContainer from "./components/AuthContainer"
 
 const AuthConfig = {
-  type: AuthContainer,
+  type: "ams-manager",
   props: {
     showHeaders: false
   },
   wrappers: [
-    "ams-manager",
+    // "ams-manager",
     "ams-redux",
     "ams-router"
   ],
@@ -49,11 +49,11 @@ const AuthConfig = {
 const auth = {
   path: "/auth",
   mainNav: false,
-  layout: 'Simple',
+  // layout: 'Simple',
   layoutSettings: {
     fixed: true,
-    navBar: 'side',
-    headerBar: true
+    navBar: 'top',
+    headerBar: false
   },
   component: AuthConfig
 }
